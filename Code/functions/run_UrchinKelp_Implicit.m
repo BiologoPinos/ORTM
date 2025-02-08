@@ -194,6 +194,27 @@ end
     sY = exp(-mu.*sum(kt(1:2,t,:))) + 0.5.*mu^2 .* exp(-mu.*sum(kt(1:2,t,:))) .* muvar;  % with scaling transition
     % sY = exp(-mu*kt(2,t,:)); % basic
 
+% --- Determine Lagged Quantities ---
+    % For the density dependence in the per-capita recruitment rate, use biomass from 2 timesteps earlier
+    if t > 2
+        % 'density_exp' is used in the exponential term for the per-capita rate
+        density_exp = sum(kt(1:2, t-2, :));
+        % 'adult_density' is the total biomass of spore-producing adults
+        % (Here, stage 2 is adult kelp)
+        adult_density = sum(kt(2, t-2, :));
+    else
+        density_exp = sum(kt(1:2, t, :));
+        adult_density = sum(kt(2, t, :));
+    end
+
+% --- Compute Per-Capita Recruitment Rate ---
+    % This term gives recruits per adult.
+    per_capita_recruitment = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2), hij(1,2), density_exp) .* ut(3, t+1, :)) .* lambda;
+
+% --- Compute Absolute Recruitment ---
+    % Multiply the per-capita rate by the total adult biomass from 2 timesteps ago.
+    recruitment_term = adult_density .* per_capita_recruitment;
+    
 % projection matrix (bull Kelp)
     Mk = [ zeros(1,1,RR), zeros(1,1,RR), zeros(1,1,RR);
     
@@ -205,15 +226,20 @@ end
           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:)), ...
           (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:))];
 
-% compute the recruitment term using a 2-timestep lag for the density-dependent factor.
-    if t > 2
-        recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t-2,:))) .* ut(3,t+1,:)) .* lambda;
-    else
-        recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda;
-    end
-
-% update kelp state for next timestep by adding the projection and the recruitment.
-    kt(:,t+1,:) = pagemtimes(Mk, kt(:,t,:)) + recruitment_term;
+% --- Update Kelp State ---
+    % The next time-step's state is the sum of the matrix projection of existing biomass
+    % and the absolute recruitment (which now correctly scales with adult density).
+    kt(:, t+1, :) = pagemtimes(Mk, kt(:, t, :)) + recruitment_term;
+    
+% % compute the recruitment term using a 2-timestep lag for the density-dependent factor.
+%     if t > 2
+%         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t-2,:))) .* ut(3,t+1,:)) .* lambda;
+%     else
+%         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda;
+%     end
+% 
+% % update kelp state for next timestep by adding the projection and the recruitment.
+%     kt(:,t+1,:) = pagemtimes(Mk, kt(:,t,:)) + recruitment_term;
          
   
 end
