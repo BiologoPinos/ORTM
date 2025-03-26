@@ -14,7 +14,7 @@ function urchin = ParaUrchin_Implicit(tmax)
     %   under fishing pressure
     % Set so that kg.60m^2 is within the range seen in the Channel Islands
     % (~60 kg.60m2 outside MPAs, ~24 kg.60m2 in MPAs)
-    urchin.RU = 0; %1.5*10^5; % 3*10^5; % 0;
+    urchin.RU = 1.5*10^5; %1.5*10^5; % 3*10^5; % 0;
     
     %% Tune this value (smaller?)
 

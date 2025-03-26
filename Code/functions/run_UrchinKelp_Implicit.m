@@ -202,8 +202,8 @@ RKset = RK .* RTk(t) .* RK_noise(t,:,:);
 %% Problem is here (probably)
 % total incoming setted sporophyte biomass (before density dependence)
 % spores from adults + restored juvs
-ksetT = RKset .* kt(2,t,:) + RKr;
-% % ksetT = RKset .* sum(reproWeight .* kt(2,max(1,t-lag),:)) + RKr;
+% % ksetT = RKset .* kt(2,t,:) + RKr;
+ksetT = RKset .* sum(reproWeight .* kt(2,max(1,t-lag),:)) + RKr;
 
      % DD survival of young
             % to be used for intra-cohort part of DD
@@ -214,8 +214,8 @@ ksetT = RKset .* kt(2,t,:) + RKr;
 
             % Adult densities to be used for inter-cohort part of DD
             % NOTE TO SELF: need to make proportional density in 4+ popmodel
-            k2n = max(kt(2,t,:), 1);
-            % % k2n = max(sum(reproWeight .* kt(2,max(1,t-lag),:)), 1);
+            % % k2n = max(kt(2,t,:), 1);
+            k2n = max(sum(reproWeight .* kt(2,max(1,t-lag),:)), 1);
 
             % DD functions
 

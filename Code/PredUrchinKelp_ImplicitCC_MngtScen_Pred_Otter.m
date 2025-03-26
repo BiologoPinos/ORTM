@@ -78,10 +78,7 @@
     % % pred_forced = ParaPred_Forced_Dataset(ORSO_data,RR);
     
     % dummy high predation scenario
-    kelp.mu = 0.00001;
-        % read on beverton holt density dependence. Will's book read what the parameters of the 
-        % beverton holt function does, and what the different parameters
-        % capture
+    % % kelp.mu = 1;
     urchin.RU = 0;
     pred_forced = repmat(100,T2,RR);    
     % % pred_forced = repmat(100,T2,RR);
@@ -129,7 +126,7 @@
         % start with high drift so that it give the system a chance to be in a kelp state
         % [juvenile, adult, drift]
         % Bull kelp:
-        kt0 = [1.17*10^5,1.17*10^5,1.17*10^6]; %
+        kt0 = [1.17*10^2,1.17*10^2,1.17*10^3]; %
         % % % Giant kelp:
         % % kt0 = [1.17*10^5,1.17*10^5,1.17*10^6]; %
     % URCHINS 🟣 (NOTE: start low to give system a chance to be in a kelp state)

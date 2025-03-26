@@ -11,21 +11,23 @@ function kelp = ParaKelp_Implicit(tmax)
     % yearly incomming settlers per kg adult standing kelp
     % (zoospore production and successful fertilization and settlement of spore)
     % mean value
-    RK = [4*10^4; 4.97*10^4]; % 
+    %% Do the math again
+    RK = [4*10^4; 4.97*10^4]; %4.97*10^4 
 
     % temporal stdev (noise)
     % normalised
     RKstdv = [0.389; 0.389]; % 
 
     % strength of denisity dependence (shading by local adults)
-    % smaller = weaker effect = higher numbers
-    mu = [0.00009; 0.00009];
+    % ricker -> smaller = weaker effect = higher numbers (more survival)
+    % beverton-holt -> bigger = weaker effect = higher number (more survival)
+    mu = [9*10^-5; 1*10^10]; %1*10^5  1*10^10
         
         % the relative per capita effect on juvenile survival by adults and juveniles
         % ddD = 0 for ricker (inter-cohort DD)
         % ddD = 1 for beverton-holt (intracohort DD)
         % we'll assume that one adult has the same effect as one juvenile on the survival for giant kelp
-        ddD = [0.5; 1]; % 0.5;
+        ddD = [0.01; 1]; % 0.5;
 
         % spatial variance in kelp densitites 
         % (for use in scale transition to landscape)
@@ -49,16 +51,18 @@ function kelp = ParaKelp_Implicit(tmax)
             
 % Growth/Maturation    
     % growth rate season to season
-    g = [6.825; 76.44]; %
+    %% Do the math again
+    g = [6.825; 76.44]; %76.44
 
 % Mortality/survival
     % change in standing kelp biomass; including seasonal variation
     % [winter, spring, summer, autumn]
-    %% think about this, talk with Jess
+    %% Change this
     lambda = repmat([1 1 1 1;...
                      1 1 1 1],1,tmax/4); %0.1 1 0.8 0.6; %0 1 0.8 0.6;
   
     % standing (juvenile + adult) kelp retention
+    %% Change this
     rS = [0.5688; 0.5688]; % 0.83;       
 
     % drift production [0,1]
