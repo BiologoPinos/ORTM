@@ -14,7 +14,7 @@ function urchin = ParaUrchin_Implicit(tmax)
     %   under fishing pressure
     % Set so that kg.60m^2 is within the range seen in the Channel Islands
     % (~60 kg.60m2 outside MPAs, ~24 kg.60m2 in MPAs)
-    urchin.RU = 1.5*10^5; % 3*10^5; % 0;
+    urchin.RU = 0; %1.5*10^5; % 3*10^5; % 0;
     
     %% Tune this value (smaller?)
 
@@ -52,19 +52,19 @@ function urchin = ParaUrchin_Implicit(tmax)
         % exposed adults
         urchin.ME = 0.1;
 
-    % predation rate on urchins by predators (lower = less mortality)
+    % predation rate on urchins by predators (otters) (lower = less mortality)
         % exposed
-        urchin.PE = 0.013;
-        % hiding   0.0065
+        urchin.PE = 0.3650; %(1.46/4) %0.013(Cali); %(1.46/4)
+        % hiding   0.1825 %0.0065(Cali)
         urchin.PH = urchin.PE*0.5;
-
+%% ASK this to Jess
 
     % fishing rate
         urchin.F = 0;   
 
     % discount rate for juv survival
     % PLD in days
-    urchin.PLD = 65;
+    urchin.PLD = 91; %65(Cali);
     urchin.tau = 1-urchin.PLD/91;
 
 

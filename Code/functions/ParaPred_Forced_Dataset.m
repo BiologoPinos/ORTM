@@ -1,4 +1,4 @@
-function otter = ParaOtter(ORSO_data,RR)
+function pred_forced = ParaPred_Forced_Dataset(ORSO_data,RR)
 
 % Description:
 % sets para values (data set) for sea otters portion of the model
@@ -22,7 +22,7 @@ otter_pop = table(replicated_average_number, ...
 otter_vector = table2array(otter_pop);
 
 % replicates vector times number of replicates 
-otter = repmat(otter_vector,RR);
+pred_forced = repmat(otter_vector,1,RR);
 
 
 

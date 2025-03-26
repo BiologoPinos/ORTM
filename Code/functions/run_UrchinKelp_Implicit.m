@@ -14,15 +14,20 @@ function [kt,ut,GC,RK_noise] = run_UrchinKelp_Implicit(kelp, urchin, tmax, RR, k
 % KELP
 RKstdv = kelp.RKstdv;
 mu = kelp.mu;
+ddD = kelp.ddD;
 muvar = kelp.muvar;
 RTk = kelp.RTk;
+reproWeight = kelp.reproWeight;  
+lag = kelp.lag;          
 g = kelp.g;
 rS = kelp.rS;
 c = kelp.c;
 d = kelp.d;
 rD = kelp.rD;
-aij = kelp.aij;
-lambda = kelp.lambda;
+aij = cell2mat(kelp.aij);
+%bhij = cell2mat(kelp.bhij); % being unpacked later
+%hij = cell2mat(kelp.hij); % being unpacked later
+%lambda = kelp.lambda; % being unpacked later
 
 % URCHIN
 RU = urchin.RU;
@@ -90,8 +95,10 @@ for t = 1:tmax
     else 
         RK = kelp.RK;
         lambda = kelp.lambda(t);
-        hij = kelp.hij(:,:,t);  
+        hij = cell2mat(kelp.hij);
+        hij = hij(:,:,t);  
     end
+
 
 %% Run urchins🟣--------------------------
     % set earlier values for delay
@@ -126,17 +133,17 @@ end
         % plot(1:10000, sJ.*(1-exp(-alpha*(1:10000)))) % basic IDD
         % plot(1:10000, sJ.*(1-exp(-alpha*(1:10000)))- 0.5*alpha^2 * exp(-alpha*(1:10000)) * alphavar % scaling transition
         
-    % linear predation
+    % linear predation (e.g. sheep head)
         % hiding adults 
         sH = exp(-MH -PH.*nt(t,:,:) - F);
         % exposed adults
         sE = exp(-ME -Psi .* (PE.*nt(t,:,:) + F) );
 
-    % % type II predation
-    %     % hiding adults 
-    %     sH = exp(-MH -F -Func_TypeII(PH,10^3,sum(ut(2:3,t,:))).*nt(t,:,:));
-    %     % exposed adults
-    %     sE = exp(-ME -Psi * (F + Func_TypeII(PE,10^3,sum(ut(2:3,t,:))).*nt(t,:,:)));
+    % % % type II predation (e.g. sea otters)
+    % %     % hiding adults 
+    % %     sH = exp(-MH -F -Func_TypeII(PH,10^3,sum(ut(2:3,t,:))).*nt(t,:,:));
+    % %     % exposed adults
+    % %     sE = exp(-ME -Psi .* (F + Func_TypeII(PE,10^3,sum(ut(2:3,t,:))).*nt(t,:,:)));
 
 % prop exposed
     % grazing capacity 
@@ -180,37 +187,78 @@ end
 %% Run kelp 🌿--------------------------
    
 % kelp restoration
+    % adding juvenile kelp biomass 
+    RKr = 0;
     if kelp.restore == "Y"
         if ismember(t, dist_yrs(1) + kelp.resttime + (0:kelp.restlgth-1))
             RK = RK + kelp.restn;
         end
     end
     
-% recruitment + timing + noise
-    RKnew = RK .* RTk(t) .* RK_noise(t,:,:);
-            
-% density depend (adult shading) survival of young
-    sY = exp(-mu.*sum(kt(1:2,t,:))) + 0.5.*mu^2 .* exp(-mu.*sum(kt(1:2,t,:))) .* muvar;  % with scaling transition
-    % sY = exp(-mu*kt(2,t,:)); % basic
-    
-% projection matrix (bull Kelp)
-    Mk = [ zeros(1,1,RR), ... 
-           RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda, ...
-           zeros(1,1,RR);
-    
-          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda, ...
-          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda, ...
-          zeros(1,1,RR);
-    
-          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:)), ...
-          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:)), ...
-          (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:))];
+% per capita settling spores + timing + noise from adults
+RKset = RK .* RTk(t) .* RK_noise(t,:,:);
+% % RKset = RK .* RTk(t) .* (sum(reproWeight .* kt(2,max(1,t-lag),:))) .* RK_noise(t,:,:);
+        
+%% Problem is here (probably)
+% total incoming setted sporophyte biomass (before density dependence)
+% spores from adults + restored juvs
+ksetT = RKset .* kt(2,t,:) + RKr;
+% % ksetT = RKset .* sum(reproWeight .* kt(2,max(1,t-lag),:)) + RKr;
 
+     % DD survival of young
+            % to be used for intra-cohort part of DD
+            % if ksetn = 0 & k2n = 0 then the DD function is NaN, and if <1 we get wierd survival rates, 
+            % so we will set 1 instead. This wont affect dynamics, since it is then x 0. 
+            % NOTE TO SELF: need to make proportional density in 4+ popmodel
+            ksetn = max(ksetT, 1);
+
+            % Adult densities to be used for inter-cohort part of DD
+            % NOTE TO SELF: need to make proportional density in 4+ popmodel
+            k2n = max(kt(2,t,:), 1);
+            % % k2n = max(sum(reproWeight .* kt(2,max(1,t-lag),:)), 1);
+
+            % DD functions
+
+            % for Beverton-Holt DD function 
+            % (which doesnt use scale transitions, since only settlers)
+            % note this basic form assumes that the slope at the orgin = 1
+            if ddD == 1
+                sY = 1/(1+ksetn./mu);
+
+            else % for mixed and ricker DD functions
+                DD = ( (ddD-1).*k2n.*exp(mu.*ddD.*k2n) ) ./ (ddD.*ksetn.*exp(mu.*ddD.*k2n) + exp(mu.*k2n) .* ((ddD-1).*k2n-ddD.*ksetn)  );
+
+                % second derivative of mixed DD function
+                % this has been calculted using the matlab solver, see ExploringMixedDD_v0.m 
+                DD2 = (2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)).^2)./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^3 - (k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(2.*mu.*exp(mu.*k2n).*(ddD - 1) + mu.^2.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^3.*ksetn.*mu.^2.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 - (2.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 + (2.*ddD.*mu.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) + (ddD.^2.*mu.^2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) - (2.*ddD.*mu.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2;
+                
+                % per capita survival of settlers including scale transition
+                sY = DD + 0.5.*DD2.*muvar;
+            end            
+  
+% total new biomass of juveniles
+    RKnew = ksetT .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda;
+
+% projection matrix (bull Kelp)
+    Mk = [zeros(1,1,RR),...
+          zeros(1,1,RR),...
+          zeros(1,1,RR);
+
+          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
+          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
+          zeros(1,1,RR);
+
+          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+          (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:))];            
+            
     % if Mk(3,1,:)>1; warning('Drift survival >1'); end
         
 % next yrs numbers
     kt(:,t+1,:) = pagemtimes(Mk,kt(:,t,:));
 
+% add juveniles
+    kt(1,t+1,:) =  RKnew;
          
   
 end
@@ -218,19 +266,9 @@ end
 end
 
 
-
-% % %% First approach suggested by adres
-% % % compute the recruitment term using a 2-timestep lag for the density-dependent factor.
-% %     if t > 2
-% %         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t-2,:))) .* ut(3,t+1,:)) .* lambda;
-% %     else
-% %         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda;
-% %     end
 % % 
-% % % update kelp state for next timestep by adding the projection and the recruitment.
-% %     kt(:,t+1,:) = pagemtimes(Mk, kt(:,t,:)) + recruitment_term;
-
-% % %% Second approach suggested by andres
+% % %% Run kelp 🌿--------------------------
+% % 
 % % % kelp restoration
 % %     if kelp.restore == "Y"
 % %         if ismember(t, dist_yrs(1) + kelp.resttime + (0:kelp.restlgth-1))
@@ -239,58 +277,55 @@ end
 % %     end
 % % 
 % % % recruitment + timing + noise
-% %     RKnew = RK .* RTk(t) .* RK_noise(t,:,:);
+% % RKnew = RK .* RTk(t) .* (sum(reproWeight .* kt(2,max(1,t-lag),:))) .* RK_noise(t,:,:);
 % % 
-% % % density depend (adult shading) survival of young
-% %     sY = exp(-mu.*sum(kt(1:2,t,:))) + 0.5.*mu^2 .* exp(-mu.*sum(kt(1:2,t,:))) .* muvar;  % with scaling transition
-% %     % sY = exp(-mu*kt(2,t,:)); % basic
+% %     % total incoming settling spore (before density dependence)
+% %     % to be used for intra-cohort part of DD
+% %     % if ksetn = 0 & k2n = 0 then the DD function is NaN, so we
+% %     % will set a very low number instead. This wont affect dynamics, since it it then x0. 
+% %     ksetn = max(RKnew.*kt(2,t,:), 10^-10);
 % % 
-% % % --- Determine Lagged Quantities ---
-% %     % For the density dependence in the per-capita recruitment rate, use biomass from 2 timesteps earlier
-% %     if t > 2
-% %         % 'density_exp' is used in the exponential term for the per-capita rate
-% %         density_exp = sum(kt(1:2, t-2, :));
-% %         % 'adult_density' is the total biomass of spore-producing adults
-% %         % (Here, stage 2 is adult kelp)
-% %         adult_density = sum(kt(2, t-2, :));
-% %     else
-% %         density_exp = sum(kt(1:2, t, :));
-% %         adult_density = sum(kt(2, t, :));
-% %     end
+% %      % DD survival of young
+% %             % Adult densities to be used for inter-cohort part of DD
+% %             % NOTE TO SELF: need to make proportional density in 4+ popmodel
+% %             k2n = max(kt(2,t,:), 10^-10);
 % % 
-% % % --- Compute Per-Capita Recruitment Rate ---
-% %     % This term gives recruits per adult.
-% %     per_capita_recruitment = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2), hij(1,2), density_exp) .* ut(3, t+1, :)) .* lambda;
+% %             % DD functions
 % % 
-% % % --- Compute Absolute Recruitment ---
-% %     % Multiply the per-capita rate by the total adult biomass from 2 timesteps ago.
-% %     recruitment_term = adult_density .* per_capita_recruitment;
+% %             % for Beverton-Holt DD function 
+% %             % (which doesnt use scale transitions, since only settlers)
+% %             % note this basic form assumes that the slope at the orgin = 1
+% %             if ddD == 1
+% %                 sY = 1/(1+ksetn./mu);
+% % 
+% %             else % for mixed and ricker DD functions
+% %                 DD = ( (ddD-1).*k2n.*exp(mu.*ddD.*k2n) ) ./ (ddD.*ksetn.*exp(mu.*ddD.*k2n) + exp(mu.*k2n) .* ((ddD-1).*k2n-ddD.*ksetn)  );
+% % 
+% %                 % second derivmutive of mixed DD function
+% %                 % this has been calculted using the matlab solver, see ExploringMixedDD_v0.m 
+% %                 DD2 = (2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)).^2)./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^3 - (k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(2.*mu.*exp(mu.*k2n).*(ddD - 1) + mu.^2.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^3.*ksetn.*mu.^2.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 - (2.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 + (2.*ddD.*mu.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) + (ddD.^2.*mu.^2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) - (2.*ddD.*mu.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2;
+% % 
+% %                 % per capita survival of settlers including scale transition
+% %                 sY = DD + 0.5.*DD2.*muvar;
+% %             end            
 % % 
 % % % projection matrix (bull Kelp)
-% %     Mk = [ zeros(1,1,RR), zeros(1,1,RR), zeros(1,1,RR);
+% %     Mk = [zeros(1,1,RR),...
+% %           RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda, zeros(1,1,RR);
 % % 
-% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda, ...
-% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda, ...
+% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
+% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
 % %           zeros(1,1,RR);
 % % 
-% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:)), ...
-% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:)), ...
-% %           (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1), kt(3,t,:)) .* ut(2,t+1,:))];
+% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+% %           (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:))];            
 % % 
-% % % --- Update Kelp State ---
-% %     % The next time-step's state is the sum of the matrix projection of existing biomass
-% %     % and the absolute recruitment (which now correctly scales with adult density).
-% %     kt(:, t+1, :) = pagemtimes(Mk, kt(:, t, :)) + recruitment_term;
+% %     % if Mk(3,1,:)>1; warning('Drift survival >1'); end
 % % 
-% % % % compute the recruitment term using a 2-timestep lag for the density-dependent factor.
-% % %     if t > 2
-% % %         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t-2,:))) .* ut(3,t+1,:)) .* lambda;
-% % %     else
-% % %         recruitment_term = RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2), sum(kt(1:2,t,:))) .* ut(3,t+1,:)) .* lambda;
-% % %     end
-% % % 
-% % % % update kelp state for next timestep by adding the projection and the recruitment.
-% % %     kt(:,t+1,:) = pagemtimes(Mk, kt(:,t,:)) + recruitment_term;
+% % % next yrs numbers
+% %     kt(:,t+1,:) = pagemtimes(Mk,kt(:,t,:));
+% % 
 % % 
 % % 
 % % end
