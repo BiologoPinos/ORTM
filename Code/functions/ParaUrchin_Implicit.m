@@ -22,10 +22,9 @@ function urchin = ParaUrchin_Implicit(tmax)
     urchin.RUstdv = 0.621; % 0;%  
 
     % Reproduction timing
-    % vector that decitates if reproduction occurs in that time step
-    % urchins reproduce 90% March-July (March-May = spring)
-    % urchin.RTu = repmat([0.25 0.25 0.25 0.25],1,tmax/4);
-    urchin.RTu = repmat([0.05 0.54 0.36 0.05],1,tmax/4);
+    % vector that dictates if reproduction occurs in that time step
+    % urchins reproduce 90% January-September (March-May = spring)
+    urchin.RTu = repmat([0.2 0.2 0.5 0.1],1,tmax/4);
 
 
 % Growth    

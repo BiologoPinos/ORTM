@@ -40,7 +40,7 @@
 %% Model parameters --------------------------
 
 % runtimes [winter, spring, summer, autmum]
-    % % T1 = 30*4;              % pre for fished predator
+    % % T1 = 30*4;              % pre for simulated predator
     T2 = 40*4; %35*4; %25*4;    % for kelp-urchin runs 
 
 % number of replicates
@@ -53,34 +53,34 @@
 
     % kelp parameters (choose Giant or Bull inside "ParaKelp_Implicit" func)
     kelp = ParaKelp_Implicit(tmax);
-        % NOTE: make sure kelp spp matches lines 123-130 "kelp initial conditions"
+        % NOTE: make sure kelp spp matches lines 124-131 "kelp initial conditions"
 
     % urchin parameters
     urchin = ParaUrchin_Implicit(tmax);
 
-    % location scenarios - Predator Abundance, Kelp Density, Urchin Density
+    % location scenarios - Predator Abundance, Bull-Kelp Density, Urchin Density
         % % % northern OR (e.g. ###)
-        % % kelp.mu = 0.00001;
+        % % kelp.mu = 1*10^10;
         % % urchin.RU = 1.5*10^5;
-        % % ORSO_data = fullfile(ORSO_output_folder, 'Table3.csv'); % ORSO Tillamook Bay"
+        % % ORSO_data = fullfile(ORSO_output_folder, 'Table3.csv'); % ORSO "Tillamook Bay"
 
         % % % central OR (e.g. ###)
-        % % kelp.mu = 0.00001;
+        % % kelp.mu = 1*10^10;
         % % urchin.RU = 1.5*10^5;
-        % % ORSO_data = fullfile(ORSO_output_folder, 'Table2.csv'); %ORSO "Newport"
+        % % ORSO_data = fullfile(ORSO_output_folder, 'Table2.csv'); % ORSO "Newport"
 
         % % % southern OR (e.g. ###)
-        % % kelp.mu = 0.00001;
+        % % kelp.mu = 1*10^10;
         % % urchin.RU = 1.5*10^5;
         % % ORSO_data = fullfile(ORSO_output_folder, 'Table1.csv'); % ORSO "Port Orford"
             
     % predation parameters
     % % pred_forced = ParaPred_Forced_Dataset(ORSO_data,RR);
     
-    % dummy high predation scenario
-    % % kelp.mu = 1;
-    urchin.RU = 0;
-    pred_forced = repmat(100,T2,RR);    
+    % dummy scenario
+    kelp.mu = 1.5*10^5;
+    urchin.RU = 1.5*10^5; %0; %1.5*10^5;
+    pred_forced = repmat(100,T2,RR);
     % % pred_forced = repmat(100,T2,RR);
     
 
@@ -107,7 +107,7 @@
 
 %% Run models --------------------------
     % NOTE: run over range of mngt length, timing, degrees
-    % NOTE: depending on the predation source (lines 60-69) some sections...
+    % NOTE: depending on the predation source (lines 60-83) some sections...
         % bellow need to be comment out or not
 
 % management (mngt) scenarios:
@@ -141,7 +141,7 @@
     kts = NaN(3, T2+1, length(mngt.time), length(mngt.length), deglngth,RR);
     % urchin biomass
     uts = kts;
-    % 
+    % average simulation in which kelp survives 
     kelp_avg = NaN(length(mngt.time), length(mngt.length), deglngth, RR);
     % % % predator biomass 
     % % PBE = NaN(T2, length(mngt.time), length(mngt.length), deglngth, RR);    

@@ -11,16 +11,15 @@ function kelp = ParaKelp_Implicit(tmax)
     % yearly incomming settlers per kg adult standing kelp
     % (zoospore production and successful fertilization and settlement of spore)
     % mean value
-    %% Do the math again
-    RK = [4*10^4; 4.97*10^4]; %4.97*10^4 
+    RK = [4*10^4; 1.24*10^4]; %4.97*10^4
 
     % temporal stdev (noise)
     % normalised
     RKstdv = [0.389; 0.389]; % 
 
     % strength of denisity dependence (shading by local adults)
-    % ricker -> smaller = weaker effect = higher numbers (more survival)
-    % beverton-holt -> bigger = weaker effect = higher number (more survival)
+    % ricker        -> smaller number = weaker effect = higher number (more survival)
+    % beverton-holt -> bigger number = weaker effect = higher number (more survival)
     mu = [9*10^-5; 1*10^10]; %1*10^5  1*10^10
         
         % the relative per capita effect on juvenile survival by adults and juveniles
@@ -52,15 +51,17 @@ function kelp = ParaKelp_Implicit(tmax)
 % Growth/Maturation    
     % growth rate season to season
     %% Do the math again
-    g = [6.825; 76.44]; %76.44
+    g = [6.825; 69.16]; %76.44
 
 % Mortality/survival
     % change in standing kelp biomass; including seasonal variation
     % [winter, spring, summer, autumn]
-    %% Change this
     lambda = repmat([1 1 1 1;...
-                     1 1 1 1],1,tmax/4); %0.1 1 0.8 0.6; %0 1 0.8 0.6;
-  
+                     0 1 0.8 0.6],1,tmax/4);
+    % % NO
+    % % lambda = repmat([1 1 1 1;...
+    % %                  0 1 1/g(2) 1/g(2)],1,tmax/4);
+    
     % standing (juvenile + adult) kelp retention
     %% Change this
     rS = [0.5688; 0.5688]; % 0.83;       
@@ -112,7 +113,7 @@ function kelp = ParaKelp_Implicit(tmax)
         % hij = repmat(hij.*reshape([1 1 1 1],1,1,4),1,1,1,tmax/4);
             
 
-%% kelp species table and choice
+% kelp species table and choice
 
 % join in table
     Paratable = table(RK, RKstdv, mu, ddD, muvar, RTk, lag, reproWeight, g, lambda, rS, c, rD, d, aij, bhij, hij,'RowNames', Species);

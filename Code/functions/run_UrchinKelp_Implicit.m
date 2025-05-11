@@ -256,9 +256,12 @@ ksetT = RKset .* sum(reproWeight .* kt(2,max(1,t-lag),:)) + RKr;
         
 % next yrs numbers
     kt(:,t+1,:) = pagemtimes(Mk,kt(:,t,:));
+    % This line of code will not work because of
+    % kt(:,t+1,:) = pagemtimes(Mk,kt(:,t,:)) + [RKnew;0;0];
+
 
 % add juveniles
-    kt(1,t+1,:) =  RKnew;
+    kt(1,t+1,:) = RKnew;
          
   
 end
