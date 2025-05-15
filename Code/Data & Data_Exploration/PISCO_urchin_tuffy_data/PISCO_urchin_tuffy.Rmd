@@ -84,11 +84,11 @@ I'd be building a hierarchical structure where my incoming settlers data informs
 a log-normal distributed annual means, and those annual means inform a normally 
 distributed year to year variance (SD)
 ```{r}
-# Nimble
+# Load nimble
 source("attach.nimble.R")
 
-# PISCO data
-pisco <- PISCO_all_years #read_csv("PISCO_all_years.csv") # source("PISCO_data_prep.R")
+# Load PISCO data
+pisco <- read_csv("PISCO_all_years.csv") #PISCO_all_years, #read_csv("PISCO_all_years.csv"), # source("PISCO_data_prep.R")
 
 # Filter for taxa 66,67,70 and drop unwanted sites
 urchins_raw <- pisco %>%
@@ -106,8 +106,9 @@ urchins <- urchins_raw %>%
 urchins <- urchins %>%
   mutate(log_count = log(count + 1))
 
-# Nimble model
 
+
+# Nimble model - Fun begins
 model_code <- nimbleCode({
   
   # Hyperpriors
@@ -129,7 +130,8 @@ model_code <- nimbleCode({
   
 })#model_code
 
-# ---- 3. PREP FOR MCMC ----
+
+# Prep for MCMC
 
 # Constants & data
 parameters <- c("mu", "sigma_year", "sigma_obs", "year_effect")
@@ -146,8 +148,7 @@ nb <- 10000
 nt <- 40
 nc <- 3
 
-# ---- 4. RUN MCMC ----
-
+# Run MCMC
 mcmc_output <- nimbleMCMC(code      = model_code,
                           data      = nimble_data,
                           constants = nimble_constants,
@@ -159,11 +160,15 @@ mcmc_output <- nimbleMCMC(code      = model_code,
                           summary   = TRUE,
                           samplesAsCodaMCMC = TRUE)
 
-# ---- 5. PROCESS OUTPUT ----
+# MCMC outputs
 attach.nimble(mcmc_output$samples)
 summary(mcmc_output)
 print(mcmc_output$summary)
 mcmcplot(mcmc_output$samples)
+
+densplot(mcmc_output$samples[, "sigma_obs"],
+         main = "Posterior density of normalized recruitment variance\n(exp(σ²) - 1)",
+         xlab = "Normalized variance")
 
 # Normalize the year effects (back-transform from log-scale)
 year_mean_recruit <- exp(year_effect)  # back to count scale
@@ -183,9 +188,7 @@ plot(density(norm_sd_mcmc),
      main = "Posterior density of recruitment norm_sd",
      xlab = "Norm_sd")
 
-densplot(mcmc_output$samples[, "sigma_obs"],
-         main = "Posterior density of normalized recruitment variance\n(exp(σ²) - 1)",
-         xlab = "Normalized variance")
+
 
 
 ```
