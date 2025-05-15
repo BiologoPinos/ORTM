@@ -1,5 +1,6 @@
 # OR_trophic_model
 
+<<<<<<< HEAD
 The project contained in this repository derived from Andrés Pinos-Sánchez master thesis research _Trophic Modeling of Oregon’s Kelp Forest: Implications for Community Dynamics and Management Scenarios_
 done at Oregon State University. The following contains a mix matrix trophic model developed in **MathLab** that simulates Oregon (OR, USA) near shore reef's dynamics of bull kelp forests, sea urchins, 
 and associated species (e.g. sea otters & dungeness crab) under different management scenarios. Specifically, this study seeks to assess:
@@ -51,5 +52,9 @@ All code is provided "as it" and without warranty
 
 ## Contact
 Be kind or I'll cry... andres.pinos.sanchez@gmail.com
+=======
+This branch aims to modify the California model into an Oregon kelp system
+
+>>>>>>> Oregon_system
 
 (add more)
