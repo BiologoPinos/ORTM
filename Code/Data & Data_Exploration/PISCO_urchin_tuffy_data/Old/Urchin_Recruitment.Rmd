@@ -1,0 +1,201 @@
+---
+title: "Urchin_Recruitment"
+author: "Andrés Pinos-Sánchez"
+date: "2025-05-15"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##OBJECTIVE:
+#estimate the normalized year to year variance of incoming recruits
+
+```{r}
+# Load libraries
+library(nimble)
+library(tidyverse)
+library(mcmcplots)
+library(MCMCvis)
+library(coda)
+
+set.seed(123)
+
+# Nimble
+source("attach.nimble.R")
+
+# Set working directory (Why not)
+setwd("C:/Users/pinosa/OneDrive - Oregon State University/Ed_OSU_Thesis_GradSchool/OR_Trophic_Model/Data/PISCO_Recruitment_Data")
+
+```
+
+
+##CLEAN DATA
+```{r}
+# PISCO data
+pisco <- read_csv("PISCO_all_years.csv") # source("PISCO_data_prep.R")
+
+# 1. Filter for taxa 66,67,70 and drop unwanted sites
+urchins_raw <- pisco %>%
+  filter(count_classcode %in% c("66","67","70"), # data 2001 - 2011
+         !site_code %in% c("CMEN00","CMES00","IFBRXX","KHLX00",
+                           "PSGX00","SHCX00","TRHX00","IPTAXX")) # 14 sites
+
+```
+
+
+##NON BAYESIAN METHOD (CHANGED CODE FROM JESS R CODE)
+
+Results:
+Normalized variance across years: 0.0706 
+Normalized SD across years: 0.2657 
+```{r}
+# 2. SUM WITHIN “TRANSECTS” ----
+# here we treat each (year, site, zone, replicate) as one transect
+transect_totals <- urchins_raw %>%
+  group_by(year, site_code, zone, replicate) %>%
+  summarise(count = sum(count), .groups="drop")
+
+# 3. ANNUAL MEAN + SD ----
+annual_stats <- transect_totals %>%
+  group_by(year) %>%
+  summarise(
+    mean_count = mean(count),
+    sd_count   = sd(count),
+    .groups = "drop"
+  )
+
+# 4. LOG‐TRANSFORM (for log-normal modeling) ----
+# add +1 pseudocount to handle zeros safely  
+annual_stats <- annual_stats %>%
+  mutate(log_mean = log(mean_count + 1))
+
+# 5. DETREND ON THE LOG SCALE ----
+trend_mod <- lm(log_mean ~ year, data = annual_stats)
+
+annual_stats <- annual_stats %>%
+  mutate(
+    # add back the overall mean of log_mean to the residuals
+    detrended_log = mean(log_mean) + resid(trend_mod)
+  )
+
+# 6. BACK–TRANSFORM & NORMALIZE ----
+annual_stats <- annual_stats %>%
+  mutate(
+    detrended = exp(detrended_log),            # back to count scale
+    normalized = detrended / mean(detrended)   # unit mean
+  )
+
+# 7. EXTRACT NORMALIZED VARIANCE & SD ----
+norm_var <- var(annual_stats$normalized)
+norm_sd  <- sd(annual_stats$normalized)
+
+# print results:
+cat("Normalized variance across years:", round(norm_var, 4), "\n")
+cat("Normalized SD across years:",       round(norm_sd, 4), "\n")
+
+# 8. PLOT: detrended and normalized time‐series ----
+library(ggplot2)
+ggplot(annual_stats, aes(x = year, y = normalized)) +
+  geom_line(size = 1) +
+  geom_point() +
+  labs(
+    y = "Detrended & normalized recruitment",
+    title = "Year‐to‐year variability of sea urchin recruitment"
+  ) +
+  theme_minimal()
+
+```
+##BAYESIAN METHOD
+Normalized variance across years: 0.08110644
+Normalized SD across years: 0.11129504
+
+```{r}
+# 2. group by year & sum within transects
+# here we treat each (year, site, zone, replicate) as one transect
+transect_totals <- urchins_raw %>%
+  group_by(year, site_code, zone, replicate) %>% #zone, replicate???
+  summarise(count = sum(count), .groups="drop")
+
+# 3. Compute annual mean recruitment
+annual_stats <- transect_totals %>%
+  group_by(year) %>%
+  summarise(mean_count = mean(count),
+            sd_count   = sd(count),
+            .groups    = "drop") %>%
+  # log‐transform with +1 pseudocount
+  mutate(log_y  = log(mean_count + 1), # center year for numerical stability
+         year_c = year - mean(year))
+
+# 4. Nimble code (Let's make Josh proud)
+nim_code <- nimbleCode({
+  # priors for trend intercept and slope
+  alpha ~ dnorm(0, sd = 10)
+  beta  ~ dnorm(0, sd =  1)
+  
+  # prior on residual precision -> convert to SD
+  tau   ~ dgamma(0.001, 0.001)
+  sigma <- 1 / sqrt(tau)
+  
+  # likelihood: log‐mean around trend
+  for(i in 1:N.year) {
+    
+    # process model
+    mu[i]    <- alpha + beta * year_c[i]
+    
+    # observation model
+    log_y[i] ~ dnorm(mu[i], tau = tau)
+    
+  }#i
+  
+  # derived: normalized variance on original scale
+  var_norm <- exp(sigma * sigma) - 1 #Var(X)/E(X)^2 = exp(σ^2) - 1 for a lognormal
+  
+})#nim_code
+
+# 5. Data prep + nimble constants
+parameters <- c("alpha", "beta", "sigma", "var_norm")
+
+nimble.data <- list(log_y  = annual_stats$log_y)
+
+nimble.constants <- list(N.year = nrow(annual_stats),
+                         year_c = annual_stats$year_c)
+
+n_iter    <- 20000
+n_burnin  <- 2000
+n_chains  <- 3
+n_thin    <- 10
+
+# 6. Run MCMC
+mcmc.output <- nimbleMCMC(code       = nim_code,
+                          data       = nimble.data,
+                          constants  = nimble.constants,
+                          monitors   = parameters,
+                          niter      = n_iter,
+                          nburnin    = n_burnin,
+                          thin       = n_thin,
+                          nchains    = n_chains,
+                          summary    = TRUE,
+                          samplesAsCodaMCMC = TRUE)
+
+# attach sample objects (alpha, beta, sigma, var_norm, etc.)
+attach.nimble(mcmc.output$samples)
+
+# 7. Summarize & Plot
+summary(mcmc.output)
+mcmcplot(mcmc.output$samples)
+print(mcmc.output$summary)
+
+# Plot posterior density of var_norm
+densplot(mcmc.output$samples[, "var_norm"],
+         main = "Posterior density of normalized recruitment variance\n(exp(σ²) - 1)",
+         xlab = "Normalized variance")
+
+# RESULT: normalize variance = 0.111295
+```
+
+
+

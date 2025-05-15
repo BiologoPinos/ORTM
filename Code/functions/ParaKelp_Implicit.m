@@ -51,16 +51,13 @@ function kelp = ParaKelp_Implicit(tmax)
 % Growth/Maturation    
     % growth rate season to season
     %% Do the math again
-    g = [6.825; 69.16]; %76.44
+    g = [6.825; 29.65]; 
 
 % Mortality/survival
     % change in standing kelp biomass; including seasonal variation
     % [winter, spring, summer, autumn]
     lambda = repmat([1 1 1 1;...
-                     0 1 0.8 0.6],1,tmax/4);
-    % % NO
-    % % lambda = repmat([1 1 1 1;...
-    % %                  0 1 1/g(2) 1/g(2)],1,tmax/4);
+                     0.1 0.9 1 0.9],1,tmax/4);
     
     % standing (juvenile + adult) kelp retention
     %% Change this
@@ -73,7 +70,7 @@ function kelp = ParaKelp_Implicit(tmax)
 
     % drift retention [0,1]
     % low = less retained, high = more retained
-    rD = [0.7; 0.8]; % 
+    rD = [0.7; 0.7]; % 
 
     % decomposition [0,1]
     % low = slower decomp, high = fast decomp

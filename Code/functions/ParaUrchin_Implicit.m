@@ -19,7 +19,7 @@ function urchin = ParaUrchin_Implicit(tmax)
     %% Tune this value (smaller?)
 
     % temporal stdv of recruitment (noise)
-    urchin.RUstdv = 0.621; % 0;%  
+    urchin.RUstdv = 0.621; %0.111295; %0; %0.621;  
 
     % Reproduction timing
     % vector that dictates if reproduction occurs in that time step

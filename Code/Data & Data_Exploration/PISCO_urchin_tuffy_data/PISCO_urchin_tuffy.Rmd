@@ -1,0 +1,192 @@
+---
+title: "PISCO_urchin_tuffy"
+author: "Andrés Pinos-Sánchez"
+date: "2025-05-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Load libraries
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(nimble)
+library(tidyverse)
+library(mcmcplots)
+library(MCMCvis)
+library(coda)
+
+#Clear
+rm(list = ls()) #environment
+
+set.seed(123)
+```
+
+
+##INPUT DATA
+
+This data is from PISCO surveys posted by MENGE, for intertidal recruitmentacross the coast
+O.G. data: https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2Fpisco_recruitment.1477.1
+```{r}
+# Input data from PISCO, data name corresponds to collection year (not deployment)
+PISCO_data_1989 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.124.1.csv")  |> mutate(year = 1989, .before = 1)
+PISCO_data_1990 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.126.1.csv")  |> mutate(year = 1990, .before = 1)
+PISCO_data_1991 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.128.1.csv")  |> mutate(year = 1991, .before = 1)
+PISCO_data_1992 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.130.1.data") |> mutate(year = 1992, .before = 1)
+PISCO_data_1993 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.132.1.data") |> mutate(year = 1993, .before = 1)
+PISCO_data_1994 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.134.1.csv")  |> mutate(year = 1994, .before = 1)
+PISCO_data_1995 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.136.1.data") |> mutate(year = 1995, .before = 1)
+PISCO_data_1996 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.138.1.data") |> mutate(year = 1996, .before = 1)
+# 1997 skipped
+PISCO_data_1998 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.140.1.data") |> mutate(year = 1998, .before = 1)
+PISCO_data_1999 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.142.1.data") |> mutate(year = 1999, .before = 1)
+PISCO_data_2000 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.144.1.csv")  |> mutate(year = 2000, .before = 1)
+PISCO_data_2001 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.146.1.data") |> mutate(year = 2001, .before = 1)
+PISCO_data_2002 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.148.1.csv")  |> mutate(year = 2002, .before = 1)
+PISCO_data_2003 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.150.1.data") |> mutate(year = 2003, .before = 1)
+PISCO_data_2004 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.152.1.csv")  |> mutate(year = 2004, .before = 1)
+PISCO_data_2005 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.154.1.csv")  |> mutate(year = 2005, .before = 1)
+PISCO_data_2006 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.156.1.data") |> mutate(year = 2006, .before = 1)
+PISCO_data_2007 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.1364.1.data")|> mutate(year = 2007, .before = 1)
+PISCO_data_2008 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.1366.1.csv") |> mutate(year = 2008, .before = 1)
+PISCO_data_2009 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.1438.1.csv") |> mutate(year = 2009, .before = 1)
+PISCO_data_2010 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.1446.1.csv") |> mutate(year = 2010, .before = 1)
+PISCO_data_2011 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.1464.1.txt") |> mutate(year = 2011, .before = 1)
+
+# Combine all datasets
+PISCO_all_years <- bind_rows(PISCO_data_1989, PISCO_data_1990, PISCO_data_1991, 
+                             PISCO_data_1992, PISCO_data_1993, PISCO_data_1994, 
+                             PISCO_data_1995, PISCO_data_1996, PISCO_data_1998,
+                             PISCO_data_1999, PISCO_data_2000, PISCO_data_2001,
+                             PISCO_data_2002, PISCO_data_2003, PISCO_data_2004, 
+                             PISCO_data_2005, PISCO_data_2006, PISCO_data_2007, 
+                             PISCO_data_2008, PISCO_data_2009, PISCO_data_2010, 
+                             PISCO_data_2011)
+
+# # Print and explore
+# print()
+# summary()
+ 
+# Save table
+# write.csv(PISCO_all_years, "PISCO_all_years.csv", row.names = FALSE)
+
+```
+
+## MODEL URCHINRECRUITMENT
+
+Objective:
+1. estimate the normalized year to year variance (SD) of incoming recruits using a 
+log normal distribution of recruitment counts
+
+I'd be building a hierarchical structure where my incoming settlers data informs
+a log-normal distributed annual means, and those annual means inform a normally 
+distributed year to year variance (SD)
+```{r}
+# Nimble
+source("attach.nimble.R")
+
+# PISCO data
+pisco <- PISCO_all_years #read_csv("PISCO_all_years.csv") # source("PISCO_data_prep.R")
+
+# Filter for taxa 66,67,70 and drop unwanted sites
+urchins_raw <- pisco %>%
+  filter(count_classcode %in% c("66","67","70"), # data 2001 - 2011
+         !site_code %in% c("CMEN00","CMES00","IFBRXX","KHLX00",
+                           "PSGX00","SHCX00","TRHX00","IPTAXX")) # 14 sites
+
+# Group (transects) by year, site_code, zone, replicate, 
+# then sum within transects, and compute annual mean and sd
+urchins <- urchins_raw %>%
+  group_by(year, site_code, zone, replicate) %>%
+  summarise(count = sum(count))
+
+# Log-transform counts (add 1 to avoid log(0))
+urchins <- urchins %>%
+  mutate(log_count = log(count + 1))
+
+# Nimble model
+
+model_code <- nimbleCode({
+  
+  # Hyperpriors
+  mu         ~ dnorm(0, 1)           # Overall mean
+  sigma_year ~ T(dt(0, 1, 1), 0, )   # Half-Cauchy for year SD
+  sigma_obs  ~ T(dt(0, 1, 1), 0, )   # Half-Cauchy for residual SD
+  
+  # Random year effects
+  for(j in 1:n_years){
+    year_effect[j] ~ dnorm(mu, sd = sigma_year)
+  }#j
+  
+  # Observation model
+  for(i in 1:n_obs){
+    
+    log_count[i] ~ dnorm(mean = year_effect[year_index[i]], sd = sigma_obs)
+    
+  }#i
+  
+})#model_code
+
+# ---- 3. PREP FOR MCMC ----
+
+# Constants & data
+parameters <- c("mu", "sigma_year", "sigma_obs", "year_effect")
+
+nimble_constants <- list(n_obs = nrow(urchins),
+                         n_years = length(sort(unique(urchins$year))),
+                         year_index = match(urchins$year, sort(unique(urchins$year))))
+
+nimble_data <- list(log_count = urchins$log_count)
+
+# MCMC settings
+ni <- 50000
+nb <- 10000
+nt <- 40
+nc <- 3
+
+# ---- 4. RUN MCMC ----
+
+mcmc_output <- nimbleMCMC(code      = model_code,
+                          data      = nimble_data,
+                          constants = nimble_constants,
+                          monitors  = parameters,
+                          niter     = ni,
+                          nburnin   = nb,
+                          nchains   = nc,
+                          thin      = nt,
+                          summary   = TRUE,
+                          samplesAsCodaMCMC = TRUE)
+
+# ---- 5. PROCESS OUTPUT ----
+attach.nimble(mcmc_output$samples)
+summary(mcmc_output)
+print(mcmc_output$summary)
+mcmcplot(mcmc_output$samples)
+
+# Normalize the year effects (back-transform from log-scale)
+year_mean_recruit <- exp(year_effect)  # back to count scale
+year_mean_norm <- sweep(year_mean_recruit, 1, rowMeans(year_mean_recruit), "/")
+norm_sd <- apply(year_mean_norm, 1, sd)
+
+# Summary of normalized SD
+hist(norm_sd, main = "Posterior of Normalized Year-to-Year SD",
+     xlab = "Normalized SD")
+mean(norm_sd)
+quantile(norm_sd, probs = c(0.025, 0.5, 0.975))
+
+
+#Plot posterior density of CV
+norm_sd_mcmc <- as.mcmc(norm_sd)
+plot(density(norm_sd_mcmc),
+     main = "Posterior density of recruitment norm_sd",
+     xlab = "Norm_sd")
+
+densplot(mcmc_output$samples[, "sigma_obs"],
+         main = "Posterior density of normalized recruitment variance\n(exp(σ²) - 1)",
+         xlab = "Normalized variance")
+
+
+```
+
