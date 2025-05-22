@@ -26,11 +26,14 @@ rm(list = ls()) #environment
 set.seed(123)
 ```
 
+##AIM OF THE SCRIPT
+Obtain the year to tear variability of urchin recruitment (std) in Oregon
 
-##INPUT DATA
+
+##INPUT RAW DATA
 
 This data is from PISCO surveys posted by MENGE, for intertidal recruitmentacross the coast
-O.G. data: https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2Fpisco_recruitment.1477.1
+O.G. data (look for all "tuffy" data-sets): https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2Fpisco_recruitment.1477.1
 ```{r}
 # # Input data from PISCO, data name corresponds to collection year (not deployment)
 # PISCO_data_1989 <- read_csv("Datasets/doi_10.6085_AA_pisco_recruitment.124.1.csv")  |> mutate(year = 1989, .before = 1)
@@ -76,15 +79,7 @@ O.G. data: https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2Fpisco_r
 
 ```
 
-## MODEL URCHINRECRUITMENT
-
-Objective:
-1. estimate the normalized year to year variance (SD) of incoming recruits using a 
-log normal distribution of recruitment counts
-
-I'd be building a hierarchical structure where my incoming settlers data informs
-a log-normal distributed annual means, and those annual means inform a normally 
-distributed year to year variance (SD)
+##INPUT DATA
 ```{r}
 # Load nimble
 source("attach.nimble.R")
@@ -108,28 +103,130 @@ urchins <- urchins_raw %>%
 urchins <- urchins %>%
   mutate(log_count = log(count + 1))
 
+```
 
+## MODEL URCHIN RECRUITMENT
 
+Objective:
+1. estimate the normalized year to year variance (SD) of incoming recruits using a 
+log normal distribution of recruitment counts
+
+I'd be building a hierarchical structure where my incoming settlers data informs
+a log-normal distributed annual means, and those annual means inform a normally 
+distributed year to year variance (SD)
+
+## CURRENT VERSION OF THE MODEL
+```{r}
 # Nimble model - Fun begins
 model_code <- nimbleCode({
   
   # Hyperpriors
+  mu          ~ dnorm(0, 1)             # Overall mean of log recruitment
+  sigma_year  ~ T(dt(0, 1, 1), 0, )     # Half-Cauchy for year effect SD
+  sigma_proc  ~ T(dt(0, 1, 1), 0, )     # Half-Cauchy for process SD
+  sigma_obs   ~ T(dt(0, 1, 1), 0, )     # Half-Cauchy for observation SD
+  
+  # Random year effects
+  for(j in 1:n_years){
+    
+    year_effect[j] <- dnorm(mu, sd = sigma_year)
+    
+  }#j
+  
+  # Process and Observational model
+  for(j in 1:n_years) {
+    
+    # Process model: latent true log recruitment per year
+    log_recruit[j] ~ dnorm(year_effect[j], sd = sigma_proc)
+    
+  }#j
+  
+  # Observation model: observed log counts around latent recruitment
+  for(i in 1:n_obs) {
+    
+    log_count[i] ~ dnorm(mean = log_recruit[year_index[i]], sd = sigma_obs)
+    
+  }#i
+  
+})#model_code
+
+
+# Prep for MCMC
+
+# Constants & data
+parameters <- c("mu", "sigma_year", "sigma_proc", "sigma_obs", "year_effect", "log_recruit")
+
+nimble_constants <- list(n_obs = nrow(urchins),
+                         n_years = length(sort(unique(urchins$year))),
+                         year_index = match(urchins$year, sort(unique(urchins$year))))
+
+nimble_data <- list(log_count = urchins$log_count)
+
+# MCMC settings
+ni <- 50000
+nb <- 10000
+nt <- 40
+nc <- 3
+
+# Run MCMC
+mcmc_output <- nimbleMCMC(code      = model_code,
+                          data      = nimble_data,
+                          constants = nimble_constants,
+                          monitors  = parameters,
+                          niter     = ni,
+                          nburnin   = nb,
+                          nchains   = nc,
+                          thin      = nt,
+                          summary   = TRUE,
+                          samplesAsCodaMCMC = TRUE)
+
+# MCMC outputs
+attach.nimble(mcmc_output$samples)
+summary(mcmc_output)
+print(mcmc_output$summary)
+mcmcplot(mcmc_output$samples)
+
+# Non-normal year to year variance of recruitment
+densplot(mcmc_output$samples[, "sigma_obs"],
+         main = "Posterior density of log-norm recruitment variance",
+         xlab = "Non-Normal variance (sd)")
+mean(sigma_obs) #number I want in log_normal space
+
+# Normalize the year effects (back-transform from log-scale)
+norm_sd <- exp(sigma_obs)  # back to count scale
+mean(norm_sd) # number I want in normal space
+
+#Plot posterior density of SD
+norm_sd_mcmc <- as.mcmc(norm_sd)
+plot(density(norm_sd_mcmc),
+     main = "Posterior density of recruitment norm_sd",
+     xlab = "Normalized variance (sd)")
+
+```
+
+
+## OLDER VERSION OF THE MODEL
+```{r}
+# Nimble model - Fun begins
+model_code <- nimbleCode({
+
+  # Hyperpriors
   mu         ~ dnorm(0, 1)           # Overall mean
   sigma_year ~ T(dt(0, 1, 1), 0, )   # Half-Cauchy for year SD
   sigma_obs  ~ T(dt(0, 1, 1), 0, )   # Half-Cauchy for residual SD
-  
+
   # Random year effects
   for(j in 1:n_years){
     year_effect[j] ~ dnorm(mu, sd = sigma_year)
   }#j
-  
+
   # Observation model
   for(i in 1:n_obs){
-    
+
     log_count[i] ~ dnorm(mean = year_effect[year_index[i]], sd = sigma_obs)
-    
+
   }#i
-  
+
 })#model_code
 
 
@@ -176,6 +273,7 @@ densplot(mcmc_output$samples[, "sigma_obs"],
 year_mean_recruit <- exp(year_effect)  # back to count scale
 year_mean_norm <- sweep(year_mean_recruit, 1, rowMeans(year_mean_recruit), "/")
 norm_sd <- apply(year_mean_norm, 1, sd)
+mean(norm_sd) # number I need
 
 # Summary of normalized SD
 hist(norm_sd, main = "Posterior of Normalized Year-to-Year SD",
@@ -189,7 +287,6 @@ norm_sd_mcmc <- as.mcmc(norm_sd)
 plot(density(norm_sd_mcmc),
      main = "Posterior density of recruitment norm_sd",
      xlab = "Norm_sd")
-
 
 ```
 

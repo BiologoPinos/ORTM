@@ -1,0 +1,599 @@
+---
+title: "PISCO_kelp_urchin_swath.Rmd"
+author: "Andrés Pinos-Sánchez"
+date: "2025-05-15"
+output: 
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(ggpubr)
+
+#Clear
+rm(list = ls()) #environment
+
+set.seed(123)
+
+setwd("C:/Users/pinosa/Documents/Git/OR_trophic_model/Code/Data_DataExploration/PISCO_kelp_urchin_swath_data")
+```
+
+## Aim of this script
+Obtain measures of mean and variability of bull kelp, and urchins densities in Oregon
+
+
+#### GETTING THE DATA
+
+This data is from PISCO surveys posted by Mark H Carr, Jennifer E Caselle, and Daniel P Malone
+for kelp forest monitoring
+O.G. data: https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2FPISCO_kelpforest.1.10
+```{r}
+# Read in taxon table
+KelpForest_Taxon <- read_csv("PISCO_kelpforest_taxon_table.1.3.csv")
+
+# read in sites table
+KelpForest_Sites <- read_csv("PISCO_kelpforest_site_table.1.3.csv")
+
+# read in Swath data
+KelpForest_Swath <- read_csv("PISCO_kelpforest_swath.1.3.csv")
+
+# read in Quad data
+KelpForest_Quad <- read_csv("PISCO_kelpforest_quad.1.3.csv")
+
+# read in fish data
+KelpForest_Fish <- read_csv("PISCO_kelpforest_fish.1.4.csv")
+
+```
+
+Modify data (Only relevant for MPA status - Not being used in OR model)
+```{r}
+# add site_status to data
+site_status <- KelpForest_Sites %>% select(site, site_status) %>% unique() 
+
+KelpForest_Swath <- left_join(KelpForest_Swath, site_status, by = "site")
+
+KelpForest_Quad <- left_join(KelpForest_Quad, site_status, by = "site")
+
+```
+
+
+#### BULL KELP ADULTS
+
+Pull out swath (KelpForest_Swath) data for adult bull kelp
+```{r}
+# filter for Bull kelp (Nereocystis luetkeana = NERLUE)
+KFSwatch_Kelp <- KelpForest_Swath %>% filter(classcode == "NERLUE")
+
+# deal with NAs for size and count (number of individual = number of stipes)
+# no other info given, so will assume = 1
+KFSwatch_Kelp <- KFSwatch_Kelp %>% replace_na(list(size = 1, count = 1))
+
+# cut out non-essential columns
+KFSwatch_Kelp <- KFSwatch_Kelp %>% select(year:size,site_status)
+
+# Get stipe density 
+KFSwatch_Kelp <- KFSwatch_Kelp %>%
+  mutate(Kelp_plants = count,
+         Kelp_stipes = count*size) 
+
+# sum within transect
+KFSwatch_Kelp <- KFSwatch_Kelp %>%
+  group_by(year, site, zone, transect) %>% 
+  summarise(Kelp_plants = sum(Kelp_plants),
+         Kelp_stipes = sum(Kelp_stipes))
+
+```
+
+Convert stipe density to wet biomass(kg): y = 1.06*x (Stekoll et al., 2007)
+  Nereocystis mean density in the beds is 5-6 plants per square meter with
+  a mean biomass per square meter of 6.17kg or ~1.06kg per plant (stipe)
+```{r}
+# kelp wet biomass is ~1.06kg per plant (stipe)
+KFSwatch_Kelp <- KFSwatch_Kelp %>% 
+  mutate(Kelp_biomasswet = 1.06*Kelp_stipes)
+
+```
+
+Focusing on Oregon coast
+```{r}
+# list of sites for OR
+KelpForest_Sites %>% filter(latitude >= 42.6673) %>% pull(site) %>% unique()
+
+# filter and separate for OR
+Kelp_df_OR <- KFSwatch_Kelp %>% rowwise() %>% 
+  filter(site %in% c("GOVERNMENT_POINT", "GULL_ROCK_CEN", "GULL_ROCK_DC",
+                     "GULL_ROCK_UC", "HUMBUG_CLIFF_N", "HUMBUG_CLIFF_S",
+                     "ISLAND_ROCK", "MCKENZIE_W", "NELLIE'S_COVE",
+                     "OTTER_CREST", "OTTER_CREST_DC", "OTTER_ROCK_KELP_E",
+                     "OTTER_ROCK_WALL_E", "REDFISH_ROCKS_KELP_N", "REDFISH_ROCKS_KELP_S",
+                     "REDFISH_ROCKS_MAMADOME_E", "REDFISH_ROCKS_TOWER_E", "REDFISH_ROCKS_TOWER_W",
+                     "REDFISH_ROCKS_WHALEBACK_E", "REDFISH_ROCKS_WHALEBACK_W", "RED_FISH_ROCKS",
+                     "SPOUTING_HORN_KELP", "SPOUTING_HORN_WALL", "WHALE_COVE_CONTROL_DC",
+                     "WHALE_COVE_CONTROL_UC", "WHALE_COVE_RESERVE")) %>% 
+  separate_wider_regex(site, c(site = ".*", "_", side = ".*"))
+
+```
+
+Scaling transition (spatial variance in kelp densities)
+- Using Oregon sites
+- calculate variance among transects, take mean of years 
+```{r}
+Kelp_var_yr <- Kelp_df_OR %>%
+  group_by(year, site, side, zone) %>%
+  summarise(Kelp_biomasswet_var = var(Kelp_biomasswet))
+  
+  # mean variance of kelp by year across sites (number we want)  
+  Kelp_var_yr %>% 
+  group_by(year) %>%
+  summarise(Kelp_biomasswet_meanvar = mean(Kelp_biomasswet_var, na.rm = T)) %>% 
+  pull(Kelp_biomasswet_meanvar) %>% mean()
+  
+  # compare to overall var
+  Kelp_var_yr %>% 
+  ungroup() %>%
+  pull(Kelp_biomasswet_var) %>% mean(., na.rm = T)
+
+
+```
+
+
+#### BULL KELP RECRUITS
+
+Here we use swath (KelpForest_Swath) data for bull kelp recruits from central CA
+There is no quad (KelpForest_Quad) data for bull kelp recruits for OR
+```{r}
+# filter for bull kelp recruits (Nereocystis luetkeana juv = NERLUEJUV) 
+KFSwath_KRecruit <- KelpForest_Swath %>% filter(classcode == "NERLUEJUV")
+
+# cut out non-essential columns
+KFSwath_KRecruit <- KFSwath_KRecruit %>% select(year:count)
+
+# avg per transect (because multiple transects were taken at different depths)
+KFSwath_KRecruit <- KFSwath_KRecruit %>%
+  group_by(year, site, zone, transect) %>%
+  summarise(Kelp_juvs = mean(count))
+
+# filter and separate for central CA (only data available)
+KelpR_df_OR <- KFSwath_KRecruit %>% rowwise() %>%
+  filter(site %in% c("ANDREW_MOLERA_DC", "BUCHON", "LITTLE_IRISH_DC",
+                     "LITTLE_IRISH_UC", "LONE_TREE", "PALO_COLORADO", 
+                     "PINOS", "SOUTH_WRECK_UC"))
+
+# calc year-to-year mean/stdev by all sites
+KelpR_dfyr <- KelpR_df_OR %>%
+  group_by(year, site) %>%
+  summarise(across(Kelp_juvs, list(mean = mean, sd = sd)))
+
+# calc year-to-year var (number we want). Detrend:
+    # fit linear model
+    Model <- glm(Kelp_juvs_mean ~ year * site, data = KelpR_dfyr)
+
+    # mean plus residuals
+    tsDT <- mean(KelpR_dfyr$Kelp_juvs_mean) + Model$residuals
+
+    # make dataframe
+    Model_df <- tibble(year = KelpR_dfyr$year, tsDT)
+
+# normalise and get varaince
+    tsDTnorm <- tsDT/mean(tsDT)
+
+    sd(tsDTnorm) # number we want
+
+```
+
+
+#### URCHINS ADULTS
+
+Pull out data for urchins
+```{r}
+# filter for adult (>2.5cm test diameter) purple and red ("MESFRAAD", "STRPURAD") urchins 
+KFSwatch_Urchins <- KelpForest_Swath %>% filter(classcode %in% c("MESFRAAD", "STRPURAD"))
+
+# summarize size (test diameter, cm; by year, species, across everywhere)
+Urchin_Size <- KFSwatch_Urchins %>% 
+  filter(!is.na(size)) %>% 
+  uncount(weights = count) 
+
+Urchin_Size %>% 
+  group_by(year, classcode) %>% 
+  summarise(mean(size), median(size), max(size), min(size), n())
+
+Urchin_Size %>% 
+  group_by(classcode) %>% 
+  summarise(mean(size), median(size), max(size), min(size), n())
+
+# calculate biomass from size (following Ling et al 2015 supp table 1)
+# this is the avg kg of an urchin
+red_bio <- (0.0499 * 7 + 0.0019)
+pur_bio <- (0.0499 * 4.1 + 0.0019)
+
+
+# cut out non-essential columns
+KFSwatch_Urchins <- KFSwatch_Urchins %>% select(year:count, site_status) 
+
+# pull out Oregon sites
+KFSwatch_Urchins <- KFSwatch_Urchins %>%
+  filter(site %in% c("GOVERNMENT_POINT", "GULL_ROCK_CEN", "GULL_ROCK_DC",
+                     "GULL_ROCK_UC", "HUMBUG_CLIFF_N", "HUMBUG_CLIFF_S",
+                     "ISLAND_ROCK", "MCKENZIE_W", "NELLIE'S_COVE",
+                     "OTTER_CREST", "OTTER_CREST_DC", "OTTER_ROCK_KELP_E",
+                     "OTTER_ROCK_WALL_E", "REDFISH_ROCKS_KELP_N", "REDFISH_ROCKS_KELP_S",
+                     "REDFISH_ROCKS_MAMADOME_E", "REDFISH_ROCKS_TOWER_E", "REDFISH_ROCKS_TOWER_W",
+                     "REDFISH_ROCKS_WHALEBACK_E", "REDFISH_ROCKS_WHALEBACK_W", "RED_FISH_ROCKS",
+                     "SPOUTING_HORN_KELP", "SPOUTING_HORN_WALL", "WHALE_COVE_CONTROL_DC",
+                     "WHALE_COVE_CONTROL_UC", "WHALE_COVE_RESERVE")) %>% 
+  separate_wider_regex(site,c(site = ".*", "_", side = ".*"))
+
+# Sum within transects
+KFSwatch_Urchins <- KFSwatch_Urchins %>%
+  group_by(year, site, side, zone, classcode, transect, site_status) %>%
+  summarise(count = sum(count))
+
+# pull out spp and rename for joining
+Urchins_df_OR <- KFSwatch_Urchins %>% 
+  pivot_wider(names_from = classcode, values_from = count) %>% 
+  rename(red_count = MESFRAAD, purple_count = STRPURAD) %>% 
+  mutate(red_biomass = red_count*red_bio, purple_biomass = purple_count*pur_bio)
+
+# add urchins to get total
+Urchins_df_OR <- Urchins_df_OR %>% 
+  mutate(Urchins_count = sum(red_count, purple_count, na.rm=T),
+         Urchins_biomass = sum(red_biomass, purple_biomass, na.rm=T))
+
+```
+
+Scaling transition (spatial variance in urchin densities)
+- Using Oregon sites
+- calculate variance among transects, take mean of years
+```{r}
+# sep species out again and the summarise ('Urchins' spp = both)
+Urchins_var_yr <- Urchins_df_OR %>%
+  pivot_longer(cols = c(red_count:Urchins_biomass), names_to = c("spp", ".value"), names_sep = "\\_") %>% 
+  group_by(year, site, side, zone, spp) %>%
+  summarise(Urchin_biomass_var = var(biomass))
+  
+  # using this one (mean of the mean variance by year)  
+  Urchins_var_yr %>% 
+  group_by(year, spp) %>%
+  summarise(Urchin_biomass_meanvar = mean(Urchin_biomass_var, na.rm = T)) %>% 
+  group_by(spp) %>%  
+  summarise(Urchin_biomass_yearvar = mean(Urchin_biomass_meanvar, na.rm = T))
+  
+  # compare to overall var
+  Urchins_var_yr %>% 
+  group_by(spp) %>%
+  summarise(Urchin_biomass_meanvar = mean(Urchin_biomass_var, na.rm = T))
+
+```
+
+
+#### Urchin recruits
+
+Pull out data for urchin recruits
+```{r}
+# filter for recruits (<2.5cm test diameter) purple and red (MESFRAAD) urchins 
+KFSwatch_UrchinREC <- KelpForest_Swath %>% filter(classcode %in% c("MESFRAREC", "STRPURREC"))
+
+# cut out non-essential columns
+KFSwatch_UrchinREC <- KFSwatch_UrchinREC %>% select(year:count, site_status) 
+
+# Sum within transects
+KFSwatch_UrchinREC <- KFSwatch_UrchinREC %>%
+  group_by(year, site, zone, classcode, transect, site_status) %>%
+  summarise(count = sum(count))
+
+
+# Calc year-to-year mean/stdev across all transects
+KFSwatch_UrchinRECyr <- KFSwatch_UrchinREC %>% 
+  group_by(year) %>% 
+  summarise(across(count, list(mean = mean, sd = sd)))
+
+
+# plot
+ggplot(KFSwatch_UrchinREC %>% group_by(site, year) %>% 
+      summarise(across(count, list(mean = mean)))) +
+  geom_line(aes(y = count_mean, x = year, color = site )) +
+  theme(legend.position="none") +
+  geom_line(data = KFSwatch_UrchinRECyr,
+            aes(y = count_mean, x = year), size = 1) +
+  theme(legend.position="none")
+
+
+#calc yr2yr var ----
+KFSwatch_UrchinRECyr %>% 
+  ungroup %>% 
+  summarise(across(count_mean:count_sd, list(mean = mean, sd = sd)))
+
+
+# detrend:
+    # fit linear model
+    Model <- glm(KFSwatch_UrchinRECyr$count_mean ~ KFSwatch_UrchinRECyr$year)
+    
+    # mean plus residuals
+    tsDT <- mean(KFSwatch_UrchinRECyr$count_mean) + Model$residuals
+    
+    # make dataframe
+    Model_df <- tibble(year = KFSwatch_UrchinRECyr$year, tsDT)
+    
+    ggplot(Model_df) + 
+      geom_line(aes(y = tsDT, x = year))
+
+# normalise and get varaince
+    tsDTnorm <- tsDT/mean(tsDT)   
+    
+    sd(tsDTnorm)
+
+```
+
+
+<!-- ### Urchin-Kelp -->
+
+<!-- Join tables -->
+<!-- ```{r} -->
+<!-- KelpUrchin_df <- Kelp_df %>%  -->
+<!--   full_join(Urchins_df_OR, -->
+<!--             by = c("year","site", "side", "zone", "transect", "site_status"))  -->
+
+<!-- # replace NA with 0 -->
+<!-- KelpUrchin_df <- KelpUrchin_df %>% replace(is.na(.), 0) -->
+
+<!-- # set site status  -->
+<!-- KelpUrchin_df <- KelpUrchin_df %>%  -->
+<!--   mutate(site_status = as.factor(site_status)) -->
+
+<!-- # remove sites with <3 years of data -->
+<!--   # find sites with >3 years -->
+<!--   site_keep <- KelpUrchin_df %>%  -->
+<!--     select(site, year) %>%  -->
+<!--     unique() %>%  -->
+<!--     group_by(site) %>%  -->
+<!--     filter(n()>2) %>% pull(site) -->
+
+<!--   KelpUrchin_df <- KelpUrchin_df %>%  -->
+<!--     filter(site %in% site_keep) -->
+
+
+<!-- # calc stats at site level -->
+<!-- KelpUrchin_df_site <- KelpUrchin_df %>%  -->
+<!--   group_by(year, site, site_status) %>%  -->
+<!--   summarise(across(Kelp_plants:Urchins_biomass, ~mean(., na.rm = T))) -->
+
+<!-- # take log -->
+<!-- KelpUrchin_df_site <- KelpUrchin_df_site %>%  -->
+<!--   mutate(across(Kelp_plants:Urchins_biomass, ~log(.), .names = "{col}_ln")) -->
+
+
+
+<!-- ``` -->
+
+
+<!-- Transect scale -->
+
+<!-- urchins v. kelp -->
+<!-- ```{r} -->
+<!-- # basic -->
+<!-- ggplot(KelpUrchin_df) + -->
+<!--   geom_point(aes(x = Urchins_biomass, y = Kelp_biomasswet), alpha = 0.3) + -->
+<!--   ylab('Kelp (kg/60m2)') + xlab('Urchins (kg/60m2)') -->
+
+
+<!-- # facet MPA status -->
+<!-- ggplot(KelpUrchin_df, aes(x = Urchins_biomass, y = Kelp_biomasswet, color = site_status)) + -->
+<!--   geom_point(alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1, scales = 'free') +  -->
+<!--   geom_rug(linewidth=0.1) + -->
+<!--   ylab('Kelp (kg/60m2)') + xlab('Urchins (kg/60m2)') -->
+
+<!-- ggscatterhist( -->
+<!--   KelpUrchin_df, x = "Urchins_biomass", y = "Kelp_biomasswet", -->
+<!--   color = "site_status", fill = "site_status", -->
+<!--   size = 3, alpha = 0.6, -->
+<!--   margin.plot = "boxplot", -->
+<!--   ggtheme = theme_bw()) -->
+
+
+
+<!-- # facet site (+MPA status) -->
+<!-- ggplot(KelpUrchin_df, aes(x = Urchins_biomass, y = Kelp_biomasswet, color = site_status)) + -->
+<!--   geom_point(alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status, site)) +  -->
+<!--   geom_rug(linewidth=0.1) + -->
+<!--   ylab('Kelp (kg/60m2)') + xlab('Urchins (kg/60m2)') -->
+
+
+
+<!-- # facet MPA status + colour urchin -->
+<!-- ggplot(KelpUrchin_df) + -->
+<!--   geom_point(aes(x = purple_biomass, y = Kelp_biomasswet), colour = "purple", alpha = 0.3) + -->
+<!--   geom_point(aes(x = red_biomass, y = Kelp_biomasswet), colour = "red", alpha = 0.3) + -->
+<!--     facet_wrap(vars(site_status), ncol = 1, scales = 'free') + -->
+<!--   ylab('Kelp (kg/60m2)') + xlab('Urchins (kg/60m2)') -->
+
+
+<!-- ggplot(KelpUrchin_df) + -->
+<!--   geom_point(aes(x = purple_count, y = Kelp_stipes), colour = "purple", alpha = 0.3) + -->
+<!--   geom_point(aes(x = red_count, y = Kelp_stipes), colour = "red", alpha = 0.3) + -->
+<!--     facet_wrap(vars(site_status), ncol = 1, scales = 'free') + -->
+<!--   ylab('Stipes (no./60m2)') + xlab('Urchins (no./60m2)') -->
+
+<!-- ``` -->
+
+<!-- urchins & kelp data distributions -->
+<!-- ```{r} -->
+<!-- g1 <- ggplot(KelpUrchin_df) + -->
+<!--   stat_ecdf(aes(x = Kelp_biomasswet, colour = site_status),  -->
+<!--             size = 1, pad = F) -->
+
+<!-- g2 <- ggplot(KelpUrchin_df) + -->
+<!--   stat_ecdf(aes(x = -Urchins_biomass, colour = site_status), -->
+<!--             size = 1, pad = F) -->
+
+<!-- ggarrange(g1, g2, ncol = 1) -->
+
+<!-- ``` -->
+
+<!-- urchins & kelp v. time -->
+<!-- ```{r} -->
+<!-- ggplot(KelpUrchin_df) + -->
+<!--   geom_point(aes(y = Urchins_biomass, x = year), colour = "orange", alpha = 0.3) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet, x = year), colour = "darkgreen", alpha = 0.3)  -->
+
+<!-- ggplot(KelpUrchin_df, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = Urchins_biomass), colour = "orange", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Urchins_biomass), colour = "orange", alpha = 0.3) + -->
+<!--   geom_hline(yintercept = 204, linetype = "dashed", color = "grey80", size = 1) + # ling threshold upper -->
+<!--   geom_hline(yintercept = 156, linetype = "dashed", color = "grey50", size = 1) + # ling threshold mean -->
+<!--   geom_hline(yintercept = 108, linetype = "dashed", color = "grey80", size = 1) + # ling threshold lower -->
+<!--   geom_vline(xintercept = 2014, linetype = "dashed", color = "red", size = 1) + # heatwave -->
+<!--   geom_vline(xintercept = 2016, linetype = "dashed", color = "red", size = 1) + -->
+<!--   facet_wrap(vars(site_status, site)) + -->
+<!--   scale_y_continuous(name = "biomass (kg/60m2)", limit = c(0,1000)) + -->
+<!--   theme_bw() -->
+
+<!-- # Anacapa East over-time averages (first by year, than over) -->
+<!-- KelpUrchin_df %>%  -->
+<!--   filter(site == "ANACAPA_EAST_ISLE") %>%  -->
+<!--   group_by(year) %>%  -->
+<!--   summarise(across(Kelp_plants:Urchins_biomass, ~mean(.))) %>%  -->
+<!--   summarise(across(Kelp_plants:Urchins_biomass, ~mean(.))) -->
+
+
+<!-- ggplot(KelpUrchin_df, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = Urchins_count), colour = "orange", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Urchins_count), colour = "orange", alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status, site)) + -->
+<!--   scale_y_continuous(name = "Abundance (no./60m2)") -->
+
+
+<!-- ggplot(KelpUrchin_df) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet, x = year), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = purple_biomass, x = year), colour = "purple", alpha = 0.3) + -->
+<!--   geom_point(aes(y = red_biomass, x = year), colour = "red", alpha = 0.3) +   -->
+<!--   facet_wrap(~site) -->
+
+
+<!-- ``` -->
+
+
+<!-- Site scale -->
+<!-- ```{r} -->
+<!-- # mean and sd across sites -->
+<!-- KelpUrchin_df_site %>% ungroup() %>%  -->
+<!--   summarise(across(c(Kelp_biomasswet,Urchins_biomass), list(mean = mean, sd = sd))) -->
+
+<!-- # mean and sd across forested sites only -->
+<!-- KelpUrchin_df_site %>% ungroup() %>%  -->
+<!--   filter(Kelp_biomasswet>0) %>%  -->
+<!--   summarise(across(c(Kelp_biomasswet,Urchins_biomass), list(mean = mean, sd = sd))) -->
+
+<!-- # mean and sd across sites by status -->
+<!-- KelpUrchin_df_site %>% group_by(site_status) %>%  -->
+<!--   summarise(across(c(Kelp_biomasswet,Urchins_biomass), list(mean = mean, sd = sd))) -->
+
+
+<!-- ggscatterhist( -->
+<!--   KelpUrchin_df_site, x = "Urchins_biomass", y = "Kelp_biomasswet", -->
+<!--   color = "site_status", fill = "site_status", -->
+<!--   size = 3, alpha = 0.6, -->
+<!--   margin.plot = "boxplot", ggtheme = theme_bw(),  -->
+<!--   xlab = 'Observed urchin biomass (kg.60m2)', ylab = 'Observed kelp biomass (kg.60m2)') -->
+
+
+<!-- # (per m2) -->
+<!--  KelpUrchin_df_site <- KelpUrchin_df_site %>%  -->
+<!--             mutate(Urchins_biomass_m = Urchins_biomass/60,  -->
+<!--                    Kelp_biomasswet_m = Kelp_biomasswet/60) -->
+<!-- ggscatterhist( -->
+<!--   KelpUrchin_df_site, x = "Urchins_biomass_m", y = "Kelp_biomasswet_m", -->
+<!--   size = 3, alpha = 0.6, -->
+<!--   margin.plot = "boxplot", -->
+<!--   ggtheme = theme_bw()) -->
+
+
+
+<!-- ggplot(KelpUrchin_df_site, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = Urchins_biomass), colour = "orange", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Urchins_biomass), colour = "orange", alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   geom_hline(yintercept = (2.6+0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold upper -->
+<!--   geom_hline(yintercept = 2.6*60, linetype = "dashed", color = "grey50", size = 1) + # ling threshold mean -->
+<!--   geom_hline(yintercept = (2.6-0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold lower   -->
+<!--   geom_vline(xintercept = 2014, linetype = "dashed", color = "red", size = 1) + # heatwave -->
+<!--   geom_vline(xintercept = 2016, linetype = "dashed", color = "red", size = 1) + -->
+<!--   scale_y_continuous(name = "biomass (kg/60m2)") + -->
+<!--   theme_bw() -->
+
+
+
+<!-- KelpUrchin_df_sitemeanMPA <- KelpUrchin_df_site %>%  -->
+<!--   group_by(site_status, year) %>%  -->
+<!--   summarise(across(Kelp_plants:Urchins_biomass, ~mean(.)))  -->
+
+<!-- ggplot(KelpUrchin_df_sitemeanMPA,aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet), colour = "darkgreen", size = 2) + -->
+<!--   geom_point(aes(y = Urchins_biomass), colour = "orange", size = 2) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   geom_hline(yintercept = (2.6+0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold upper -->
+<!--   geom_hline(yintercept = 2.6*60, linetype = "dashed", color = "grey50", size = 1) + # ling threshold mean -->
+<!--   geom_hline(yintercept = (2.6-0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold lower   -->
+<!--   geom_vline(xintercept = 2014, linetype = "dashed", color = "red", size = 1) + # heatwave -->
+<!--   geom_vline(xintercept = 2016, linetype = "dashed", color = "red", size = 1) + -->
+<!--   scale_y_continuous(name = "biomass (kg/60m2)") + -->
+<!--   theme_bw() -->
+
+<!-- ggplot(KelpUrchin_df_sitemeanMPA) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet, x = Urchins_biomass, colour = site_status), size = 2) + -->
+<!--   geom_point(data = KelpUrchin_df_site, aes(y = Kelp_biomasswet, x = Urchins_biomass, colour = site_status), alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   geom_vline(xintercept = (2.6+0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold upper -->
+<!--   geom_vline(xintercept = 2.6*60, linetype = "dashed", color = "grey50", size = 1) + # ling threshold mean -->
+<!--   geom_vline(xintercept = (2.6-0.8)*60, linetype = "dashed", color = "grey80", size = 1) + # ling threshold lower   -->
+<!--   scale_y_continuous(name = "biomass (kg/60m2)") + -->
+<!--   theme_bw() -->
+
+
+
+
+
+<!-- ggplot(KelpUrchin_df_site, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_biomasswet), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = purple_biomass), colour = "purple", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = purple_biomass), colour = "purple", alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   scale_y_continuous(name = "biomass (kg/60m2)") + -->
+<!--   theme_bw() -->
+
+
+
+<!-- ggplot(KelpUrchin_df_site, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = Urchins_count), colour = "orange", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Urchins_count), colour = "orange", alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   scale_y_continuous(name = "density (no./60m2)",  limits = c(0,300)) + -->
+<!--   theme_bw() -->
+
+
+<!-- ggplot(KelpUrchin_df_site, aes(x = year)) + -->
+<!--   geom_point(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = Kelp_stipes), colour = "darkgreen", alpha = 0.3) + -->
+<!--   geom_point(aes(y = purple_count), colour = "purple", alpha = 0.3) + -->
+<!--   geom_smooth(aes(y = purple_count), colour = "purple", alpha = 0.3) + -->
+<!--   facet_wrap(vars(site_status), ncol = 1) + -->
+<!--   scale_y_continuous(name = "density (no./60m2)",  limits = c(0,300)) + -->
+<!--   theme_bw() -->
+
+<!-- ``` -->
