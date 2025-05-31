@@ -12,14 +12,15 @@
 #  =      S3 & S4,              S5 & S6                 S9 & S10 & SE2        C7 & C8 & CE4
 rm(list = ls())
 # Set User Parameters  ---------------------------------------------------------
-reps = 1000         # Number replications for population sims (should use at least 500)
+reps = 10000         # Number replications for population sims (should use at least 500)
 StartYear = 2026    # Initial year
-Nyrs = 25           # Number of years to project population dynamics
+Nyrs = 100           # Number of years to project population dynamics
 Mltplscn = 0        # set to 0 for single scenario, 1 for range of initN, 2 for range of areas
-Initseg = c("S9","S10","SE2")  # List of coastal segments for introduction: e.g. c(1) = Block 1 only
-Initpop = c(60,60,60)  # Number of animals introduced to each block)
+Initseg = c("N3","C7","S6")  # List of coastal segments for introduction: e.g. c(1) = Block 1 only
+                             # Pacific city "N3", New Port "C7", Port Ordford "S6"
+Initpop = c(30,30,30)  # Number of animals introduced to each block)
 AddOt = c(0,0,0)      # Additional otters per year introduced after initial intro: 0 = none
-AddYrs = 10         # Number of years for supplementary otter additions (e.g. re-habs) added  
+AddYrs = 0         # Number of years for supplementary otter additions (e.g. re-habs) added  
 PpnFem = .65        # Proportion of females in introduced pop
 PpnAd = .25         # Proportion of adults in introduced pop
 Ephase = 10         # Avg Years for population to become "established" 
@@ -38,7 +39,8 @@ plotmap = 1
 plotrngexp = 1
 savetable = 1
 Historical_comp = 0
-Scenario_name = c("SC3_") # set to c("") for no scenario
+Scenario_name = c("Norm_Succes") # set to c("") for no scenario
+# Scenario_name = c("SC3_") # set to c("") for no scenario
 #
 # Load necessary libraries -------------------------------------------------
 # NOTE: Ensure following packages are installed
@@ -438,354 +440,353 @@ for (z in 1:Nscn){
   }
 }
 # save(Dmn, file = './results/DensityProjections.Rdata')
-#
 # stopCluster(cl)
-#
-if(Mltplscn == 1){
-  df_target = data.frame(Abund_25 = c(100,200,300),
-                         Init_req = rep(0,3))
-  df_tmp = data.frame(N_introduced = Ipopsz,
-                      N25_mn = Nfin,N25_lo = Nfin_lo,N25_hi = Nfin_hi)
-  ggplot(df_tmp,aes(x=N_introduced,y=N25_mn)) +
-    geom_ribbon(aes(ymin=N25_lo,ymax=N25_hi),alpha=0.3) +
-    geom_line() +
-    labs(x="Number introduced",y="Number after 25 years",
-         title="Population size vs. number introduced") +
-    theme_classic()
-  # Target 100
-  ii = which(abs(df_tmp$N25_mn-100)==min(abs(df_tmp$N25_mn-100)))
-  adj = df_tmp$N25_mn[ii]/100
-  df_target$Init_req[1] = ceiling(df_tmp$N_introduced[ii]/adj)
-  df_sec_Tseries_100 = round(NcsSc[,,ii]/adj,digits = 1); 
-  #adj = sum(df_sec_Tseries_100[,Nyrs])/100
-  df_sec_Tseries_100 = cbind(data$Segment,as.data.frame(df_sec_Tseries_100))
-  colnames(df_sec_Tseries_100) = c("Section",as.character(Years))
-  # Target 200
-  ii = which(abs(df_tmp$N25_mn-200)==min(abs(df_tmp$N25_mn-200)))
-  adj = df_tmp$N25_mn[ii]/200
-  df_target$Init_req[2] = ceiling(df_tmp$N_introduced[ii]/adj)
-  df_sec_Tseries_200 = round(NcsSc[,,ii]/adj,digits = 1)
-  df_sec_Tseries_200 = cbind(data$Segment,as.data.frame(df_sec_Tseries_200))
-  colnames(df_sec_Tseries_200) = c("Section",as.character(Years))
-  # Target 300
-  ii = which(abs(df_tmp$N25_mn-300)==min(abs(df_tmp$N25_mn-300)))
-  adj = df_tmp$N25_mn[ii]/300
-  df_target$Init_req[3] = ceiling(df_tmp$N_introduced[ii]/adj)
-  df_sec_Tseries_300 = round(NcsSc[,,ii]/adj,digits = 1)
-  df_sec_Tseries_300 = cbind(data$Segment,as.data.frame(df_sec_Tseries_300))
-  colnames(df_sec_Tseries_300) = c("Section",as.character(Years))
-  
-  wb = createWorkbook()
-  addWorksheet(wb, "Target_100") 
-  writeData(wb, sheet = "Target_100", x = df_sec_Tseries_100, startCol = 1)
-  addWorksheet(wb, "Target_200") 
-  writeData(wb, sheet = "Target_200", x = df_sec_Tseries_200, startCol = 1)
-  addWorksheet(wb, "Target_300") 
-  writeData(wb, sheet = "Target_300", x = df_sec_Tseries_300, startCol = 1)
-  saveWorkbook(wb, file=paste0("./results/SctnTrends_IntroSct_",paste(Initseg,collapse="_"),
-                               ".xlsx"),overwrite = TRUE)
-}
-if(Mltplscn == 2){
-  df_tmp = data.frame(InitSeg = factor(Initsgs,levels = Initsgs),
-                      N25_mn = Nfin,N25_lo = Nfin_lo,N25_hi = Nfin_hi)
-  df_tmp = df_tmp[-40,]
-  ggplot(df_tmp,aes(x=InitSeg,y=N25_mn)) +
-    geom_errorbar(aes(ymin=N25_lo,ymax=N25_hi),alpha=0.3) +
-    geom_point() +
-    labs(x="Coastal Segment of Intriduction",y="Number after 25 years",
-         title="Population size vs. number introduced") +
-    theme_classic()
-}
-
-tryCatch(stopCluster(cl), error = function(e1) e1 = print("Cluster terminted"))
-tryCatch(rm(cl), error = function(e1) e1 = print("Cluster removed"),
-         warning = function(e1) e1 = print("Cluster removed"))
-
-if(Nyrs >100){
-  Ntot = t(apply(N_sim,c(2,3),sum))
-  ii = which(Ntot[,Nyrs]>0); Ntot = Ntot[ii,]
-  Nmn_tot = apply(Ntot,2,mean)
-  Nlo_tot = apply(Ntot,2,quantile,prob=0.025)
-  Nhi_tot = apply(Ntot,2,quantile,prob=0.975)
-  Nmn_tot = as.numeric(smooth.spline(Nmn_tot,spar=.3)$y)
-  Nlo_tot = as.numeric(smooth.spline(Nlo_tot,spar=.3)$y)
-  Nhi_tot = as.numeric(smooth.spline(Nhi_tot ,spar=.3)$y)
-  Nyrs_to_K = which(abs(Nhi_tot - 1*Ktot)==min(abs(Nhi_tot - 1*Ktot)))
-  # Nyrs_to_K = which(abs(Nmn_tot - .5*Ktot)==min(abs(Nmn_tot - .5*Ktot)))
-  df_Y2K = data.frame(Year = seq(1,Nyrs),
-                      Ott_est_mn = Nmn_tot,
-                      Ott_est_lo = Nlo_tot,
-                      Ott_est_hi = Nhi_tot)
-  plt_Y2K = ggplot(df_Y2K,aes(x=Year,y=Ott_est_mn)) +
-    geom_ribbon(aes(ymin=Ott_est_lo,ymax=Ott_est_hi),alpha = 0.2) +
-    geom_line(size=1.1) + 
-    geom_hline(yintercept = Ktot, color="red", linetype = "dashed") +
-    labs(x="Year of Projection",y="Estimated abundance") +
-    ggtitle("Long-term population projection",
-            subtitle = paste(c(paste0("Initial translocation of ", 
-                                      sum(Initpop), " introduced to sections "),Initseg),collapse=" ")) +
-    theme_classic()
-  print(paste0("Number years to reach K statewide = ",Nyrs_to_K))
-  print(plt_Y2K)
-}
 
 
-#  Do some plots ---------------------------------------------------------
-# Heatmap of Density vs Coastal Block
-if(Mltplscn == 0 & Nyrs <= 100){
-  
-  if(length(Initblk)==1){
-    plotlab = paste(c(paste0("Initial translocation of ",Initpop, " located in section"),Initseg),
-                    collapse=" ")
-    
-    if (sum(AddOt) > 0 ){
-      plotlab = paste(c(plotlab, paste0("supplemented by ",AddOt," subadults per year for ",AddYrs,"yrs")), 
-                      collapse=" ")
-    }
-  }else{
-    plotlab = paste(c(paste0("Initial translocation of ", sum(Initpop), " divided among sections"),
-                      Initseg),
-                    collapse=", ")
-    if (sum(AddOt) > 0 ){
-      plotlab = paste(c(plotlab, paste0("supplemented by ",sum(AddOt)," subadults per year for ",AddYrs,"yrs")), 
-                      collapse=" ")
-    }
-  }
-  
-  dfDens = data.frame(Blocks = data$Segment,Sort = data$Sortord,
-                      Area = data$Area_km2, Dmn)
-  colnames(dfDens) = c('Block','Order','Area',as.character(Years))
-  df_Dens <- melt(dfDens, id.vars = c("Block","Order","Area"))
-  names(df_Dens)[4:5] <- c("Year", "Density")
-  df_Dens$Number = df_Dens$Density * df_Dens$Area
-  dfDens = df_Dens[with(df_Dens,order(Order,Year)),]; rm(df_Dens)
-  dfDens$Block = factor(dfDens$Block,levels = data$Segment[order(data$Sortord)])
-  maxD <- ceiling(100*max(dfDens$Number))/100
-  plt1 = ggplot(dfDens, aes(Year, Block)) +
-    geom_tile(aes(fill = Number), color = "white") +
-    scale_fill_gradient(low = "white", high = "steelblue",limits=c(0, maxD)) +
-    xlab("Year in Future") +
-    ylab("Coastal Section #") +
-    theme(legend.title = element_text(size = 12),
-          legend.text = element_text(size = 12),
-          plot.title = element_text(size=14,face="bold"),
-          axis.title=element_text(size=12),
-          axis.text.y = element_text(size=8),
-          axis.text.x = element_text(angle = 90, hjust = 1)) +
-    labs(fill = "Mean Expected Number",
-         title=paste0("Projected Number by Section after ", Nyrs," Years"),
-         subtitle=plotlab) +
-    ggtitle(paste0("Projected Number by Section after ", Nyrs," Years"),
-            subtitle=plotlab)
-  print(plt1)
-  
-  # Trend plot of abundance over time
-  # Calculate mean trend and CI (use bootstrap CI, 1000 reps)
-  # First, entire Metapopulation (all of SEAK):
-  mean.fun <- function(dat, idx) mean(dat[idx], na.rm = TRUE)
-  CIL.fun <- function(dat, idx) quantile(dat[idx], 0.025, na.rm = TRUE)
-  CIH.fun <- function(dat, idx) quantile(dat[idx], 0.975, na.rm = TRUE)
-  Extnct.fun <- function(dat, idx) 100*(length(dat[idx[dat[idx]<1]])/length(dat[idx]))
-  means = numeric(length=Nyrs)
-  SEmean = numeric(length=Nyrs)
-  Lo = numeric(length=Nyrs)
-  Hi = numeric(length=Nyrs)
-  ExtnctP = numeric(length=Nyrs)
-  CImn = matrix(0,nrow = Nyrs,ncol=2)
-  Nsum = colSums(N[,1,])
-  means[1] = mean(Nsum)
-  bootobj = boot(Nsum, CIL.fun, R=1000, sim="ordinary")
-  Lo[1] = mean(bootobj$t)
-  bootobj = boot(Nsum, CIH.fun, R=1000, sim="ordinary")
-  Hi[1] = mean(bootobj$t)
-  CImn[1,1:2] = sum(Nmn[,1])
-  for(y in 2:Nyrs){
-    Nsum = colSums(N[,y,])
-    bootobj = boot(Nsum, mean.fun, R=1000, sim="ordinary")
-    means[y] = median(bootobj$t)
-    SEmean[y] = sd(bootobj$t)
-    CImn[y,1] = means[y] - 1.96*SEmean[y]
-    CImn[y,2] = means[y] + 1.96*SEmean[y]
-    # tmp = boot.ci(bootobj, type="bca", conf = 0.90); CImn[y,] = tmp$bca[2:3]
-    bootobj = boot(Nsum, CIL.fun, R=1000, sim="ordinary")
-    Lo[y] = mean(bootobj$t)
-    bootobj = boot(Nsum, CIH.fun, R=1000, sim="ordinary")
-    Hi[y] = mean(bootobj$t)  
-    bootobj = boot(Nsum, Extnct.fun, R=1000, sim="ordinary")
-    ExtnctP[y] = mean(bootobj$t)  
-  }
-  Pop_Overall <- data.frame(Year=Years,Mean=means,lower=Lo,upper=Hi,
-                            SEmean=SEmean,CImeanLo=CImn[,1],CImeanHi=CImn[,2],
-                            ExtnctP = ExtnctP)
-  if (Historical_comp==1){
-    titletxt = paste0("Projected Sea Otter Population: Avg. after ", Nyrs," years = ",
-                      round(Pop_Overall$Mean[Nyrs]),
-                      ", Probability of Extinction = ",round(Pop_Overall$ExtnctP[Nyrs]),"%")
-    
-  }else{
-    titletxt = paste0("Projected Sea Otter Population, ", Nyrs," Years: mean = ",
-                      round(Pop_Overall$Mean[Nyrs]),
-                      "(95% CI ",round(Pop_Overall$CImeanLo[Nyrs]),
-                      " - ", round(Pop_Overall$CImeanHi[Nyrs]),")")
-  }
-  maxN = ceiling( max(Pop_Overall$upper)/100)*100
-  plt2 = (ggplot(Pop_Overall, aes(Year, Mean))+
-            geom_line(data=Pop_Overall)+
-            geom_ribbon(data=Pop_Overall,aes(ymin=lower,ymax=upper),alpha=0.2)+
-            geom_ribbon(data=Pop_Overall,aes(ymin=CImeanLo,ymax=CImeanHi),alpha=0.3)+
-            ylim(0,maxN) +  
-            xlab("Year") +
-            ylab("Expected Abundance") +
-            ggtitle(titletxt, subtitle=plotlab)) + theme_classic(base_size = 12)
-  
-  if (Historical_comp==1){
-    minyr = min(Pop_Overall$Year)
-    tmp = data.frame(Year = minyr + c(2,3,4,5,6,7,8,11),
-                     Count = c(21,23,21,13,12,4,4,1))
-    plt2 = plt2 + geom_point(data=tmp,aes(x=Year,y=Count),color="red",size=2)
-  }
-  
-  print(plt2)
-  
-  if (plotrngexp==1){
-    # Compute observed rate of range spread:
-    # NOTES: 
-    # - if starting from one focal area (e.g. south end of island), then there are 
-    #  two "mostly independent" coastlines (east and west coast) that range front
-    #  is moving along, so observed rate of range spread should be ~ 2x V_sp
-    # - block considered "occupied" when >2 otters present, on average
-    # - range extent corrected for coastline complexity, to approximate 1-D coast
-    #
-    Range = numeric(length = Nyrs) 
-    for (i in 1:Nyrs){
-      ii = which(Nmn[,i]>2.5 & Etag==0)
-      tmp = numeric()
-      for(j in 1:length(ii)){
-        tmp[j] = mean(sort(Distmat[,ii[j]],decreasing=F)[2:3])
-      }
-      ii = which(Nmn[,i]>2.5 & Etag==1)
-      tmp2 = numeric()
-      for(j in 1:length(ii)){
-        tmp2[j] = .5
-      }
-      Range[i] = sum(tmp) # + sum(tmp2) #*CoastCrct
-    }
-    df_Rngspr = data.frame(Year = Years[(Ephase+1):min(80,Nyrs)],
-                           Range_ext = Range[(Ephase+1):min(80,Nyrs)])
-    ftV = lm(Range_ext ~ Year, data=df_Rngspr)
-    summary(ftV)
-    WScrct = 1/(length(Initpop)*2) 
-    plt3 = ggplot(data = df_Rngspr, aes(x=Year,y=Range_ext)) +
-      geom_point() +
-      stat_smooth(method = "lm", col = "red") + 
-      labs(x="Year",y="Coastal range extent (km)",
-           title = paste("Observed range spread over", Nyrs,"Years,", "V_sp = ",V_sp, "km/yr"),
-           subtitle = paste("Adj R2 = ",signif(summary(ftV)$adj.r.squared, 3),
-                            ", Slope =",signif(ftV$coef[[2]], 3),
-                            ", Approx Observed Wave Spd (correcting for # initial pops) =", 
-                            signif(ftV$coef[[2]]*WScrct,2))) +
-      theme_classic()
-    print(plt3)
-  }
-  #
-  # Output summary tables ---------------------------------------------------
-  # Simulation summary (Overall):
-  
-  if (savetable==1 | plotmap == 1){
-    # Calculate summary For each block 
-    randsmp = sample(seq(1,reps),1000,replace = TRUE)
-    meansALL = numeric(length=P*Nyrs)
-    LoALL = numeric(length=P*Nyrs)
-    HiALL = numeric(length=P*Nyrs)
-    YearsALL = numeric(length=P*Nyrs)
-    BlockIDs = character(length=P*Nyrs)
-    BlockArea = numeric(length=P*Nyrs)
-    for (p in 1:P){
-      tmp = matrix(nrow=1000,ncol=Nyrs)
-      for(r in 1:1000){
-        tmp[r,] <- (N[p,,randsmp[r]])
-      }
-      Lo = numeric(length=Nyrs)
-      Hi = numeric(length=Nyrs)
-      means = numeric(length=Nyrs)
-      means[1] = mean(tmp[,1])
-      Lo[1] = mean(tmp[,1])
-      Hi[1] = mean(tmp[,1])
-      for(y in 2:Nyrs){
-        means[y] = mean(tmp[,y])
-        # Optional: load library BMS, and fit density curve
-        # dens = as.numeric(density(tmp[,y],adjust = 3))
-        # CI =  quantile.density(dens, probs=c(.05, .95))
-        # Lo[y] <- max(0,as.numeric(CI[1]))
-        # Lo[y] <- max(0,as.numeric(CI[1]))
-        Lo[y] <- quantile(tmp[,y], probs=c(.05))
-        Hi[y] <- quantile(tmp[,y], probs=c(.95))
-      }
-      meansALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = means
-      LoALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Lo
-      HiALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Hi
-      YearsALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Years
-      BlockIDs[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = as.character(rep(data$Segment[p],Nyrs))
-      BlockArea[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = rep(Areahab[p],Nyrs)
-    }
-    Hab_Blocks <- data.frame(Block = BlockIDs, Area = BlockArea, 
-                             Year=YearsALL, Mean=meansALL, 
-                             lower=LoALL,upper=HiALL,Density=dfDens$Density,
-                             DensityLO = LoALL/BlockArea, DensityHI = HiALL/BlockArea)
-    Hab_Blocks_Fin = Hab_Blocks[which(Hab_Blocks$Year==max(Hab_Blocks$Year)),]
-    # Output block summaries of simulation results 
-    if (savetable==1){
-      savename = paste0("_Sct_",paste0(Initseg,collapse = "_"),"_Nott_",
-                        paste(Initpop,collapse = "_"))
-      write.csv(Hab_Blocks,paste0('./results/',Scenario_name,
-                                  'Results_ORblks',savename,'.csv'),row.names = FALSE)
-      write.csv(Pop_Overall,paste0('./results/',Scenario_name,
-                                   'Results_tot_',savename,'.csv'),row.names = FALSE)
-    }
-  }
-  #
-  if (plotmap == 1){
-    Cdata <- ORgrd %>% 
-      group_by(Segment,id) %>%
-      summarize(Kval_mn = mean(Kval_mn, na.rm = TRUE))
-    CellID = character()
-    BlockID = character()
-    Celldens = numeric()
-    for (i in 1:P){
-      ii = which(Cdata$Segment==data$Segment[i])
-      CellID = c(CellID, Cdata$id[ii] )
-      BlockID = c(BlockID, Cdata$Segment[ii])
-      cellscale = Cdata$Kval_mn[ii] / sum(Cdata$Kval_mn[ii])
-      cellscale = cellscale / max(cellscale)
-      Celldens = c(Celldens, Hab_Blocks_Fin$Mean[i]*cellscale)
-    }
-    CellDensProject = data.frame(CellID =CellID,
-                                 BlockID=BlockID,
-                                 Celldens = Celldens)
-    write.csv(CellDensProject,
-              paste0("./results/",Scenario_name,"Results_CellDensProject.csv"),
-              row.names = FALSE)
-    #
-    # MAP OUTPUT:  ------------------------------------------------------
-    endvals = Hab_Blocks_Fin[,c(1,4,7)]
-    ORblk = merge(ORblk, endvals, by.x='Segment', by.y = 'Block')
-    plt4 = ggplot() + 
-      geom_sf(data=ORblk, aes(fill = Mean, color=Mean),
-                   alpha = 1,size = 1) +
-      scale_fill_continuous(low = "#fff7ec", high = "#7F0000") + 
-      scale_color_continuous(guide = "none", low = "#fff7ec", high = "#7F0000") + 
-      scale_x_continuous(name = "Longitude", breaks = seq(-125,-123)) + # , breaks = NULL, labels = NULL
-      scale_y_continuous(name = "Latitude") + # , breaks = NULL, labels = NULL
-      geom_sf(data = ORlnd, aes(fill=piece),
-                   color="wheat4", fill="cornsilk1",size = 0.1) +   
-      # north(HGlnd,location = "topright") +
-      # scalebar(HGlnd, dist = 50, dist_unit = "km", st.size = 3.5, 
-      #         transform = FALSE, location = "bottomleft") +
-      ggtitle("Projected Distribution") +
-      # coord_equal(ratio=1) + 
-      coord_sf() +
-      theme_minimal()
-    print(plt4)
-  }
-}  
+# if(Mltplscn == 1){
+#   df_target = data.frame(Abund_25 = c(100,200,300),
+#                          Init_req = rep(0,3))
+#   df_tmp = data.frame(N_introduced = Ipopsz,
+#                       N25_mn = Nfin,N25_lo = Nfin_lo,N25_hi = Nfin_hi)
+#   ggplot(df_tmp,aes(x=N_introduced,y=N25_mn)) +
+#     geom_ribbon(aes(ymin=N25_lo,ymax=N25_hi),alpha=0.3) +
+#     geom_line() +
+#     labs(x="Number introduced",y="Number after 25 years",
+#          title="Population size vs. number introduced") +
+#     theme_classic()
+#   # Target 100
+#   ii = which(abs(df_tmp$N25_mn-100)==min(abs(df_tmp$N25_mn-100)))
+#   adj = df_tmp$N25_mn[ii]/100
+#   df_target$Init_req[1] = ceiling(df_tmp$N_introduced[ii]/adj)
+#   df_sec_Tseries_100 = round(NcsSc[,,ii]/adj,digits = 1); 
+#   #adj = sum(df_sec_Tseries_100[,Nyrs])/100
+#   df_sec_Tseries_100 = cbind(data$Segment,as.data.frame(df_sec_Tseries_100))
+#   colnames(df_sec_Tseries_100) = c("Section",as.character(Years))
+#   # Target 200
+#   ii = which(abs(df_tmp$N25_mn-200)==min(abs(df_tmp$N25_mn-200)))
+#   adj = df_tmp$N25_mn[ii]/200
+#   df_target$Init_req[2] = ceiling(df_tmp$N_introduced[ii]/adj)
+#   df_sec_Tseries_200 = round(NcsSc[,,ii]/adj,digits = 1)
+#   df_sec_Tseries_200 = cbind(data$Segment,as.data.frame(df_sec_Tseries_200))
+#   colnames(df_sec_Tseries_200) = c("Section",as.character(Years))
+#   # Target 300
+#   ii = which(abs(df_tmp$N25_mn-300)==min(abs(df_tmp$N25_mn-300)))
+#   adj = df_tmp$N25_mn[ii]/300
+#   df_target$Init_req[3] = ceiling(df_tmp$N_introduced[ii]/adj)
+#   df_sec_Tseries_300 = round(NcsSc[,,ii]/adj,digits = 1)
+#   df_sec_Tseries_300 = cbind(data$Segment,as.data.frame(df_sec_Tseries_300))
+#   colnames(df_sec_Tseries_300) = c("Section",as.character(Years))
+#   
+#   wb = createWorkbook()
+#   addWorksheet(wb, "Target_100") 
+#   writeData(wb, sheet = "Target_100", x = df_sec_Tseries_100, startCol = 1)
+#   addWorksheet(wb, "Target_200") 
+#   writeData(wb, sheet = "Target_200", x = df_sec_Tseries_200, startCol = 1)
+#   addWorksheet(wb, "Target_300") 
+#   writeData(wb, sheet = "Target_300", x = df_sec_Tseries_300, startCol = 1)
+#   saveWorkbook(wb, file=paste0("./results/SctnTrends_IntroSct_",paste(Initseg,collapse="_"),
+#                                ".xlsx"),overwrite = TRUE)
+# }
+# if(Mltplscn == 2){
+#   df_tmp = data.frame(InitSeg = factor(Initsgs,levels = Initsgs),
+#                       N25_mn = Nfin,N25_lo = Nfin_lo,N25_hi = Nfin_hi)
+#   df_tmp = df_tmp[-40,]
+#   ggplot(df_tmp,aes(x=InitSeg,y=N25_mn)) +
+#     geom_errorbar(aes(ymin=N25_lo,ymax=N25_hi),alpha=0.3) +
+#     geom_point() +
+#     labs(x="Coastal Segment of Intriduction",y="Number after 25 years",
+#          title="Population size vs. number introduced") +
+#     theme_classic()
+# }
+# 
+# tryCatch(stopCluster(cl), error = function(e1) e1 = print("Cluster terminted"))
+# tryCatch(rm(cl), error = function(e1) e1 = print("Cluster removed"),
+#          warning = function(e1) e1 = print("Cluster removed"))
+# 
+# if(Nyrs >100){
+#   Ntot = t(apply(N_sim,c(2,3),sum))
+#   ii = which(Ntot[,Nyrs]>0); Ntot = Ntot[ii,]
+#   Nmn_tot = apply(Ntot,2,mean)
+#   Nlo_tot = apply(Ntot,2,quantile,prob=0.025)
+#   Nhi_tot = apply(Ntot,2,quantile,prob=0.975)
+#   Nmn_tot = as.numeric(smooth.spline(Nmn_tot,spar=.3)$y)
+#   Nlo_tot = as.numeric(smooth.spline(Nlo_tot,spar=.3)$y)
+#   Nhi_tot = as.numeric(smooth.spline(Nhi_tot ,spar=.3)$y)
+#   Nyrs_to_K = which(abs(Nhi_tot - 1*Ktot)==min(abs(Nhi_tot - 1*Ktot)))
+#   # Nyrs_to_K = which(abs(Nmn_tot - .5*Ktot)==min(abs(Nmn_tot - .5*Ktot)))
+#   df_Y2K = data.frame(Year = seq(1,Nyrs),
+#                       Ott_est_mn = Nmn_tot,
+#                       Ott_est_lo = Nlo_tot,
+#                       Ott_est_hi = Nhi_tot)
+#   plt_Y2K = ggplot(df_Y2K,aes(x=Year,y=Ott_est_mn)) +
+#     geom_ribbon(aes(ymin=Ott_est_lo,ymax=Ott_est_hi),alpha = 0.2) +
+#     geom_line(size=1.1) + 
+#     geom_hline(yintercept = Ktot, color="red", linetype = "dashed") +
+#     labs(x="Year of Projection",y="Estimated abundance") +
+#     ggtitle("Long-term population projection",
+#             subtitle = paste(c(paste0("Initial translocation of ", 
+#                                       sum(Initpop), " introduced to sections "),Initseg),collapse=" ")) +
+#     theme_classic()
+#   print(paste0("Number years to reach K statewide = ",Nyrs_to_K))
+#   print(plt_Y2K)
+# }
+# 
+# #  Do some plots ---------------------------------------------------------
+# # Heatmap of Density vs Coastal Block
+# if(Mltplscn == 0 & Nyrs <= 100){
+#   
+#   if(length(Initblk)==1){
+#     plotlab = paste(c(paste0("Initial translocation of ",Initpop, " located in section"),Initseg),
+#                     collapse=" ")
+#     
+#     if (sum(AddOt) > 0 ){
+#       plotlab = paste(c(plotlab, paste0("supplemented by ",AddOt," subadults per year for ",AddYrs,"yrs")), 
+#                       collapse=" ")
+#     }
+#   }else{
+#     plotlab = paste(c(paste0("Initial translocation of ", sum(Initpop), " divided among sections"),
+#                       Initseg),
+#                     collapse=", ")
+#     if (sum(AddOt) > 0 ){
+#       plotlab = paste(c(plotlab, paste0("supplemented by ",sum(AddOt)," subadults per year for ",AddYrs,"yrs")), 
+#                       collapse=" ")
+#     }
+#   }
+#   
+#   dfDens = data.frame(Blocks = data$Segment,Sort = data$Sortord,
+#                       Area = data$Area_km2, Dmn)
+#   colnames(dfDens) = c('Block','Order','Area',as.character(Years))
+#   df_Dens <- melt(dfDens, id.vars = c("Block","Order","Area"))
+#   names(df_Dens)[4:5] <- c("Year", "Density")
+#   df_Dens$Number = df_Dens$Density * df_Dens$Area
+#   dfDens = df_Dens[with(df_Dens,order(Order,Year)),]; rm(df_Dens)
+#   dfDens$Block = factor(dfDens$Block,levels = data$Segment[order(data$Sortord)])
+#   maxD <- ceiling(100*max(dfDens$Number))/100
+#   plt1 = ggplot(dfDens, aes(Year, Block)) +
+#     geom_tile(aes(fill = Number), color = "white") +
+#     scale_fill_gradient(low = "white", high = "steelblue",limits=c(0, maxD)) +
+#     xlab("Year in Future") +
+#     ylab("Coastal Section #") +
+#     theme(legend.title = element_text(size = 12),
+#           legend.text = element_text(size = 12),
+#           plot.title = element_text(size=14,face="bold"),
+#           axis.title=element_text(size=12),
+#           axis.text.y = element_text(size=8),
+#           axis.text.x = element_text(angle = 90, hjust = 1)) +
+#     labs(fill = "Mean Expected Number",
+#          title=paste0("Projected Number by Section after ", Nyrs," Years"),
+#          subtitle=plotlab) +
+#     ggtitle(paste0("Projected Number by Section after ", Nyrs," Years"),
+#             subtitle=plotlab)
+#   print(plt1)
+#   
+#   # Trend plot of abundance over time
+#   # Calculate mean trend and CI (use bootstrap CI, 1000 reps)
+#   # First, entire Metapopulation (all of SEAK):
+#   mean.fun <- function(dat, idx) mean(dat[idx], na.rm = TRUE)
+#   CIL.fun <- function(dat, idx) quantile(dat[idx], 0.025, na.rm = TRUE)
+#   CIH.fun <- function(dat, idx) quantile(dat[idx], 0.975, na.rm = TRUE)
+#   Extnct.fun <- function(dat, idx) 100*(length(dat[idx[dat[idx]<1]])/length(dat[idx]))
+#   means = numeric(length=Nyrs)
+#   SEmean = numeric(length=Nyrs)
+#   Lo = numeric(length=Nyrs)
+#   Hi = numeric(length=Nyrs)
+#   ExtnctP = numeric(length=Nyrs)
+#   CImn = matrix(0,nrow = Nyrs,ncol=2)
+#   Nsum = colSums(N[,1,])
+#   means[1] = mean(Nsum)
+#   bootobj = boot(Nsum, CIL.fun, R=1000, sim="ordinary")
+#   Lo[1] = mean(bootobj$t)
+#   bootobj = boot(Nsum, CIH.fun, R=1000, sim="ordinary")
+#   Hi[1] = mean(bootobj$t)
+#   CImn[1,1:2] = sum(Nmn[,1])
+#   for(y in 2:Nyrs){
+#     Nsum = colSums(N[,y,])
+#     bootobj = boot(Nsum, mean.fun, R=1000, sim="ordinary")
+#     means[y] = median(bootobj$t)
+#     SEmean[y] = sd(bootobj$t)
+#     CImn[y,1] = means[y] - 1.96*SEmean[y]
+#     CImn[y,2] = means[y] + 1.96*SEmean[y]
+#     # tmp = boot.ci(bootobj, type="bca", conf = 0.90); CImn[y,] = tmp$bca[2:3]
+#     bootobj = boot(Nsum, CIL.fun, R=1000, sim="ordinary")
+#     Lo[y] = mean(bootobj$t)
+#     bootobj = boot(Nsum, CIH.fun, R=1000, sim="ordinary")
+#     Hi[y] = mean(bootobj$t)  
+#     bootobj = boot(Nsum, Extnct.fun, R=1000, sim="ordinary")
+#     ExtnctP[y] = mean(bootobj$t)  
+#   }
+#   Pop_Overall <- data.frame(Year=Years,Mean=means,lower=Lo,upper=Hi,
+#                             SEmean=SEmean,CImeanLo=CImn[,1],CImeanHi=CImn[,2],
+#                             ExtnctP = ExtnctP)
+#   if (Historical_comp==1){
+#     titletxt = paste0("Projected Sea Otter Population: Avg. after ", Nyrs," years = ",
+#                       round(Pop_Overall$Mean[Nyrs]),
+#                       ", Probability of Extinction = ",round(Pop_Overall$ExtnctP[Nyrs]),"%")
+#     
+#   }else{
+#     titletxt = paste0("Projected Sea Otter Population, ", Nyrs," Years: mean = ",
+#                       round(Pop_Overall$Mean[Nyrs]),
+#                       "(95% CI ",round(Pop_Overall$CImeanLo[Nyrs]),
+#                       " - ", round(Pop_Overall$CImeanHi[Nyrs]),")")
+#   }
+#   maxN = ceiling( max(Pop_Overall$upper)/100)*100
+#   plt2 = (ggplot(Pop_Overall, aes(Year, Mean))+
+#             geom_line(data=Pop_Overall)+
+#             geom_ribbon(data=Pop_Overall,aes(ymin=lower,ymax=upper),alpha=0.2)+
+#             geom_ribbon(data=Pop_Overall,aes(ymin=CImeanLo,ymax=CImeanHi),alpha=0.3)+
+#             ylim(0,maxN) +  
+#             xlab("Year") +
+#             ylab("Expected Abundance") +
+#             ggtitle(titletxt, subtitle=plotlab)) + theme_classic(base_size = 12)
+#   
+#   if (Historical_comp==1){
+#     minyr = min(Pop_Overall$Year)
+#     tmp = data.frame(Year = minyr + c(2,3,4,5,6,7,8,11),
+#                      Count = c(21,23,21,13,12,4,4,1))
+#     plt2 = plt2 + geom_point(data=tmp,aes(x=Year,y=Count),color="red",size=2)
+#   }
+#   
+#   print(plt2)
+#   
+#   if (plotrngexp==1){
+#     # Compute observed rate of range spread:
+#     # NOTES: 
+#     # - if starting from one focal area (e.g. south end of island), then there are 
+#     #  two "mostly independent" coastlines (east and west coast) that range front
+#     #  is moving along, so observed rate of range spread should be ~ 2x V_sp
+#     # - block considered "occupied" when >2 otters present, on average
+#     # - range extent corrected for coastline complexity, to approximate 1-D coast
+#     #
+#     Range = numeric(length = Nyrs) 
+#     for (i in 1:Nyrs){
+#       ii = which(Nmn[,i]>2.5 & Etag==0)
+#       tmp = numeric()
+#       for(j in 1:length(ii)){
+#         tmp[j] = mean(sort(Distmat[,ii[j]],decreasing=F)[2:3])
+#       }
+#       ii = which(Nmn[,i]>2.5 & Etag==1)
+#       tmp2 = numeric()
+#       for(j in 1:length(ii)){
+#         tmp2[j] = .5
+#       }
+#       Range[i] = sum(tmp) # + sum(tmp2) #*CoastCrct
+#     }
+#     df_Rngspr = data.frame(Year = Years[(Ephase+1):min(80,Nyrs)],
+#                            Range_ext = Range[(Ephase+1):min(80,Nyrs)])
+#     ftV = lm(Range_ext ~ Year, data=df_Rngspr)
+#     summary(ftV)
+#     WScrct = 1/(length(Initpop)*2) 
+#     plt3 = ggplot(data = df_Rngspr, aes(x=Year,y=Range_ext)) +
+#       geom_point() +
+#       stat_smooth(method = "lm", col = "red") + 
+#       labs(x="Year",y="Coastal range extent (km)",
+#            title = paste("Observed range spread over", Nyrs,"Years,", "V_sp = ",V_sp, "km/yr"),
+#            subtitle = paste("Adj R2 = ",signif(summary(ftV)$adj.r.squared, 3),
+#                             ", Slope =",signif(ftV$coef[[2]], 3),
+#                             ", Approx Observed Wave Spd (correcting for # initial pops) =", 
+#                             signif(ftV$coef[[2]]*WScrct,2))) +
+#       theme_classic()
+#     print(plt3)
+#   }
+#   #
+#   # Output summary tables ---------------------------------------------------
+#   # Simulation summary (Overall):
+#   
+#   if (savetable==1 | plotmap == 1){
+#     # Calculate summary For each block 
+#     randsmp = sample(seq(1,reps),1000,replace = TRUE)
+#     meansALL = numeric(length=P*Nyrs)
+#     LoALL = numeric(length=P*Nyrs)
+#     HiALL = numeric(length=P*Nyrs)
+#     YearsALL = numeric(length=P*Nyrs)
+#     BlockIDs = character(length=P*Nyrs)
+#     BlockArea = numeric(length=P*Nyrs)
+#     for (p in 1:P){
+#       tmp = matrix(nrow=1000,ncol=Nyrs)
+#       for(r in 1:1000){
+#         tmp[r,] <- (N[p,,randsmp[r]])
+#       }
+#       Lo = numeric(length=Nyrs)
+#       Hi = numeric(length=Nyrs)
+#       means = numeric(length=Nyrs)
+#       means[1] = mean(tmp[,1])
+#       Lo[1] = mean(tmp[,1])
+#       Hi[1] = mean(tmp[,1])
+#       for(y in 2:Nyrs){
+#         means[y] = mean(tmp[,y])
+#         # Optional: load library BMS, and fit density curve
+#         # dens = as.numeric(density(tmp[,y],adjust = 3))
+#         # CI =  quantile.density(dens, probs=c(.05, .95))
+#         # Lo[y] <- max(0,as.numeric(CI[1]))
+#         # Lo[y] <- max(0,as.numeric(CI[1]))
+#         Lo[y] <- quantile(tmp[,y], probs=c(.05))
+#         Hi[y] <- quantile(tmp[,y], probs=c(.95))
+#       }
+#       meansALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = means
+#       LoALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Lo
+#       HiALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Hi
+#       YearsALL[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = Years
+#       BlockIDs[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = as.character(rep(data$Segment[p],Nyrs))
+#       BlockArea[((p-1)*Nyrs+1):((p-1)*Nyrs+Nyrs)] = rep(Areahab[p],Nyrs)
+#     }
+#     Hab_Blocks <- data.frame(Block = BlockIDs, Area = BlockArea, 
+#                              Year=YearsALL, Mean=meansALL, 
+#                              lower=LoALL,upper=HiALL,Density=dfDens$Density,
+#                              DensityLO = LoALL/BlockArea, DensityHI = HiALL/BlockArea)
+#     Hab_Blocks_Fin = Hab_Blocks[which(Hab_Blocks$Year==max(Hab_Blocks$Year)),]
+#     # Output block summaries of simulation results 
+#     if (savetable==1){
+#       savename = paste0("_Sct_",paste0(Initseg,collapse = "_"),"_Nott_",
+#                         paste(Initpop,collapse = "_"))
+#       write.csv(Hab_Blocks,paste0('./results/',Scenario_name,
+#                                   'Results_ORblks',savename,'.csv'),row.names = FALSE)
+#       write.csv(Pop_Overall,paste0('./results/',Scenario_name,
+#                                    'Results_tot_',savename,'.csv'),row.names = FALSE)
+#     }
+#   }
+#   #
+#   if (plotmap == 1){
+#     Cdata <- ORgrd %>% 
+#       group_by(Segment,id) %>%
+#       summarize(Kval_mn = mean(Kval_mn, na.rm = TRUE))
+#     CellID = character()
+#     BlockID = character()
+#     Celldens = numeric()
+#     for (i in 1:P){
+#       ii = which(Cdata$Segment==data$Segment[i])
+#       CellID = c(CellID, Cdata$id[ii] )
+#       BlockID = c(BlockID, Cdata$Segment[ii])
+#       cellscale = Cdata$Kval_mn[ii] / sum(Cdata$Kval_mn[ii])
+#       cellscale = cellscale / max(cellscale)
+#       Celldens = c(Celldens, Hab_Blocks_Fin$Mean[i]*cellscale)
+#     }
+#     CellDensProject = data.frame(CellID =CellID,
+#                                  BlockID=BlockID,
+#                                  Celldens = Celldens)
+#     write.csv(CellDensProject,
+#               paste0("./results/",Scenario_name,"Results_CellDensProject.csv"),
+#               row.names = FALSE)
+#     #
+#     # MAP OUTPUT:  ------------------------------------------------------
+#     endvals = Hab_Blocks_Fin[,c(1,4,7)]
+#     ORblk = merge(ORblk, endvals, by.x='Segment', by.y = 'Block')
+#     plt4 = ggplot() + 
+#       geom_sf(data=ORblk, aes(fill = Mean, color=Mean),
+#                    alpha = 1,size = 1) +
+#       scale_fill_continuous(low = "#fff7ec", high = "#7F0000") + 
+#       scale_color_continuous(guide = "none", low = "#fff7ec", high = "#7F0000") + 
+#       scale_x_continuous(name = "Longitude", breaks = seq(-125,-123)) + # , breaks = NULL, labels = NULL
+#       scale_y_continuous(name = "Latitude") + # , breaks = NULL, labels = NULL
+#       geom_sf(data = ORlnd, aes(fill=piece),
+#                    color="wheat4", fill="cornsilk1",size = 0.1) +   
+#       # north(HGlnd,location = "topright") +
+#       # scalebar(HGlnd, dist = 50, dist_unit = "km", st.size = 3.5, 
+#       #         transform = FALSE, location = "bottomleft") +
+#       ggtitle("Projected Distribution") +
+#       # coord_equal(ratio=1) + 
+#       coord_sf() +
+#       theme_minimal()
+#     print(plt4)
+#   }
+# }  
 
