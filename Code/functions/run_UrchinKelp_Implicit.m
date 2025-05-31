@@ -32,6 +32,7 @@ aij = cell2mat(kelp.aij);
 % URCHIN
 RU = urchin.RU;
 RUstdv = urchin.RUstdv;
+RUdist = urchin.RUdist;
 RTu = urchin.RTu;
 gJ = urchin.gJ;
 MJ = urchin.MJ;
@@ -78,7 +79,12 @@ dist_yrs = dist.yrs;
     % kelp
         RK_noise = repelem(max(zeros(tmax/4,1,RR),normrnd(1,RKstdv,tmax/4,1,RR)),4,1,1);
     % urchins
-        RU_noise = repelem(max(zeros(tmax/4,1,RR),normrnd(1,RUstdv,tmax/4,1,RR)),4,1,1);
+        % RU_noise = repelem(max(zeros(tmax/4,1,RR),normrnd(1,RUstdv,tmax/4,1,RR)),4,1,1);
+        if strcmp(RUdist{1}, 'normal')
+            RU_noise = repelem(max(zeros(tmax/4,1,RR),normrnd(1,RUstdv,tmax/4,1,RR)),4,1,1);
+        else 
+            RU_noise = repelem(max(zeros(tmax/4,1,RR),lognrnd(1,RUstdv,tmax/4,1,RR)),4,1,1);
+        end        
 
 
 %% Run over time--------------------------
