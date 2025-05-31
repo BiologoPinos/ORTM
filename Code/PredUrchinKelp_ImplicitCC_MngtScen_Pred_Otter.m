@@ -2,11 +2,7 @@
  
 % Authorship: 
 % Andrés Pinos-Sánchez | andres.pinos.sanchez@gmail.com
-% Co-authors: 
-    % Jess Hopf (o.g. model developer), 
-    % Leif Rasmuson, 
-    % Mark Novak,
-    % Will White
+% Co-authors: Jess Hopf, Leif Rasmuson, Mark Novak, Will White
 
 % Toolboxes required:
     % Statistics and Machine Learning Toolbox
@@ -44,7 +40,7 @@
     T2 = 40*4; %35*4; %25*4;    % for kelp-urchin runs 
 
 % number of replicates
-    RR =  2; %2; %1000; %10000;  
+    RR =  1000; %2; %1000; %10000;  
 
 % load in parameter values
 
@@ -59,35 +55,35 @@
     urchin = ParaUrchin_Implicit(tmax);
 
     % location scenarios - Predator Abundance, Bull-Kelp Density, Urchin Density
+    
+        % % % No sea otters scenario
+        % % kelp.mu = 1*10^10; % kelp.mu; %1*10^10; %1*10^5; % bigger number = weaker effect = higher number (more survival)
+        % % urchin.RU = 1.5*10^5; %urchin.RU; %1.5*10^5; % 3*10^5;
+        % % ORSO_data = fullfile(ORSO_output_folder, 'Table0.csv');
+    
         % % % northern OR (e.g. ###)
         % % kelp.mu = 1*10^10;
         % % urchin.RU = 1.5*10^5;
         % % ORSO_data = fullfile(ORSO_output_folder, 'Table3.csv'); % ORSO "Tillamook Bay"
 
         % % % central OR (e.g. ###)
-        % % kelp.mu = 1*10^10;
-        % % urchin.RU = 1.5*10^5;
+        % % kelp.mu = kelp.mu;
+        % % urchin.RU = urchin.RU;
         % % ORSO_data = fullfile(ORSO_output_folder, 'Table2.csv'); % ORSO "Newport"
 
-        % % % southern OR (e.g. ###)
-        % % kelp.mu = 1*10^10;
-        % % urchin.RU = 1.5*10^5;
-        % % ORSO_data = fullfile(ORSO_output_folder, 'Table1.csv'); % ORSO "Port Orford"
+        % southern OR (e.g. ###)
+        kelp.mu = 1*10^10;
+        urchin.RU = 1.5*10^5;
+        ORSO_data = fullfile(ORSO_output_folder, 'Table1.csv'); % ORSO "Port Orford"
             
     % predation parameters
-    % % pred_forced = ParaPred_Forced_Dataset(ORSO_data,RR);
-    
-    % dummy scenario
-    kelp.mu = 1.5*10^5;
-    urchin.RU = 1.5*10^5; %0; %1.5*10^5;
-    pred_forced = repmat(100,T2,RR);
-    % % pred_forced = repmat(100,T2,RR);
+    pred_forced = ParaPred_Forced_Dataset(ORSO_data,RR);
     
 
 %% Disturbance -------------------------- 
     % NOTE: choose between disturbance or non-disturbance scenario
     % NOTE: "dist" stands for "disturbance"
-    dist.lngth = 2; % 1; % 
+    dist.lngth = 0; % 1; % 2; 
 
     % time in model when disturbance happen (20 years pre-run is added to this)
     % 1 & 2 = winter and spring 3 & 4 = summer & autum
