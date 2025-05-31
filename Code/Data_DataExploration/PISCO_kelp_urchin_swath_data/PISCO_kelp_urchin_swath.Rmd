@@ -7,25 +7,29 @@ output:
   pdf_document: default
 ---
 
+#### AIM OF CODE
+Obtain mean and variability metrics for bull kelp and urchin densities along the Oregon coast.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE) 
+
+# Load libraries
 library(ggplot2)
 library(dplyr)
 library(readr)
 library(tidyverse)
 library(ggpubr)
+library(brms)
+library(posterior)
 
-#Clear
+# Clear workspace and set seed
 rm(list = ls()) #environment
-
 set.seed(123)
 
+# Working directory
 setwd("C:/Users/pinosa/Documents/Git/OR_trophic_model/Code/Data_DataExploration/PISCO_kelp_urchin_swath_data")
+
 ```
-
-## Aim of this script
-Obtain measures of mean and variability of bull kelp, and urchins densities in Oregon
-
 
 #### GETTING THE DATA
 
@@ -33,300 +37,178 @@ This data is from PISCO surveys posted by Mark H Carr, Jennifer E Caselle, and D
 for kelp forest monitoring
 O.G. data: https://data.piscoweb.org/metacatui/view/doi%3A10.6085%2FAA%2FPISCO_kelpforest.1.10
 ```{r}
-# Read in taxon table
-KelpForest_Taxon <- read_csv("PISCO_kelpforest_taxon_table.1.3.csv")
-
-# read in sites table
-KelpForest_Sites <- read_csv("PISCO_kelpforest_site_table.1.3.csv")
-
-# read in Swath data
-KelpForest_Swath <- read_csv("PISCO_kelpforest_swath.1.3.csv")
-
-# read in Quad data
-KelpForest_Quad <- read_csv("PISCO_kelpforest_quad.1.3.csv")
-
-# read in fish data
-KelpForest_Fish <- read_csv("PISCO_kelpforest_fish.1.4.csv")
+# Read PISCO data
+taxon <- read_csv("PISCO_kelpforest_taxon_table.1.3.csv") #taxon table
+sites <- read_csv("PISCO_kelpforest_site_table.1.3.csv") #sites table
+swath <- read_csv("PISCO_kelpforest_swath.1.3.csv") #Swath data
+quad  <- read_csv("PISCO_kelpforest_quad.1.3.csv") #Quad data
+fish  <- read_csv("PISCO_kelpforest_fish.1.4.csv") #fish data
 
 ```
 
-Modify data (Only relevant for MPA status - Not being used in OR model)
+Annotate MPA status (only relevant for CA model)
 ```{r}
-# add site_status to data
-site_status <- KelpForest_Sites %>% select(site, site_status) %>% unique() 
-
-KelpForest_Swath <- left_join(KelpForest_Swath, site_status, by = "site")
-
-KelpForest_Quad <- left_join(KelpForest_Quad, site_status, by = "site")
+site_status <- sites %>% select(site, site_status) %>% distinct()
+swath <- left_join(swath, site_status, by = "site")
+quad  <- left_join(quad,  site_status, by = "site")
 
 ```
 
 
 #### BULL KELP ADULTS
-
-Pull out swath (KelpForest_Swath) data for adult bull kelp
+Determine: Scaling transition (spatial variance in kelp densities)
 ```{r}
-# filter for Bull kelp (Nereocystis luetkeana = NERLUE)
-KFSwatch_Kelp <- KelpForest_Swath %>% filter(classcode == "NERLUE")
+# Step 1: Filter for Bull kelp (N.luetkeana = NERLUE), and group transects across time & space
+kelp_adult <- swath %>%
+  filter(classcode == "NERLUE") %>% # 
+  replace_na(list(size = 1, count = 1)) %>% # assume missing = 1
+  transmute(year, site, zone, transect,
+            plants = count,
+            stipes = count * size) %>%
+  group_by(year, site, zone, transect) %>%
+  summarise(plants   = sum(plants),
+            stipes   = sum(stipes),
+            biomass  = stipes * 5.18,  # 5.18kg per stipe
+            .groups = "drop")
 
-# deal with NAs for size and count (number of individual = number of stipes)
-# no other info given, so will assume = 1
-KFSwatch_Kelp <- KFSwatch_Kelp %>% replace_na(list(size = 1, count = 1))
+# Step 2: Filter Oregon sites (lat ≥42.6673)
+oregon_sites <- sites %>%
+  filter(latitude >= 42.6673) %>%
+  pull(site)
 
-# cut out non-essential columns
-KFSwatch_Kelp <- KFSwatch_Kelp %>% select(year:size,site_status)
+kelp_OR <- kelp_adult %>% filter(site %in% oregon_sites)
 
-# Get stipe density 
-KFSwatch_Kelp <- KFSwatch_Kelp %>%
-  mutate(Kelp_plants = count,
-         Kelp_stipes = count*size) 
+# Step 3: Spatial variance workflow
+kelp_var_site <- kelp_OR %>%
+  group_by(site, year) %>%
+  summarise(var_biomass = var(biomass, na.rm = TRUE), .groups = "drop")
 
-# sum within transect
-KFSwatch_Kelp <- KFSwatch_Kelp %>%
-  group_by(year, site, zone, transect) %>% 
-  summarise(Kelp_plants = sum(Kelp_plants),
-         Kelp_stipes = sum(Kelp_stipes))
+mean_var_site <- kelp_var_site %>%
+  group_by(site) %>%
+  summarise(mean_var = mean(var_biomass, na.rm = TRUE), .groups = "drop")
+
+overall_var <- mean(mean_var_site$mean_var, na.rm = TRUE)
+
+overall_var # target number
 
 ```
-
-Convert stipe density to wet biomass(kg): y = 1.06*x (Stekoll et al., 2007)
-  Nereocystis mean density in the beds is 5-6 plants per square meter with
-  a mean biomass per square meter of 6.17kg or ~1.06kg per plant (stipe)
-```{r}
-# kelp wet biomass is ~1.06kg per plant (stipe)
-KFSwatch_Kelp <- KFSwatch_Kelp %>% 
-  mutate(Kelp_biomasswet = 1.06*Kelp_stipes)
-
-```
-
-Focusing on Oregon coast
-```{r}
-# list of sites for OR
-KelpForest_Sites %>% filter(latitude >= 42.6673) %>% pull(site) %>% unique()
-
-# filter and separate for OR
-Kelp_df_OR <- KFSwatch_Kelp %>% rowwise() %>% 
-  filter(site %in% c("GOVERNMENT_POINT", "GULL_ROCK_CEN", "GULL_ROCK_DC",
-                     "GULL_ROCK_UC", "HUMBUG_CLIFF_N", "HUMBUG_CLIFF_S",
-                     "ISLAND_ROCK", "MCKENZIE_W", "NELLIE'S_COVE",
-                     "OTTER_CREST", "OTTER_CREST_DC", "OTTER_ROCK_KELP_E",
-                     "OTTER_ROCK_WALL_E", "REDFISH_ROCKS_KELP_N", "REDFISH_ROCKS_KELP_S",
-                     "REDFISH_ROCKS_MAMADOME_E", "REDFISH_ROCKS_TOWER_E", "REDFISH_ROCKS_TOWER_W",
-                     "REDFISH_ROCKS_WHALEBACK_E", "REDFISH_ROCKS_WHALEBACK_W", "RED_FISH_ROCKS",
-                     "SPOUTING_HORN_KELP", "SPOUTING_HORN_WALL", "WHALE_COVE_CONTROL_DC",
-                     "WHALE_COVE_CONTROL_UC", "WHALE_COVE_RESERVE")) %>% 
-  separate_wider_regex(site, c(site = ".*", "_", side = ".*"))
-
-```
-
-Scaling transition (spatial variance in kelp densities)
-- Using Oregon sites
-- calculate variance among transects, take mean of years 
-```{r}
-Kelp_var_yr <- Kelp_df_OR %>%
-  group_by(year, site, side, zone) %>%
-  summarise(Kelp_biomasswet_var = var(Kelp_biomasswet))
-  
-  # mean variance of kelp by year across sites (number we want)  
-  Kelp_var_yr %>% 
-  group_by(year) %>%
-  summarise(Kelp_biomasswet_meanvar = mean(Kelp_biomasswet_var, na.rm = T)) %>% 
-  pull(Kelp_biomasswet_meanvar) %>% mean()
-  
-  # compare to overall var
-  Kelp_var_yr %>% 
-  ungroup() %>%
-  pull(Kelp_biomasswet_var) %>% mean(., na.rm = T)
-
-
-```
-
 
 #### BULL KELP RECRUITS
 
-Here we use swath (KelpForest_Swath) data for bull kelp recruits from central CA
-There is no quad (KelpForest_Quad) data for bull kelp recruits for OR
+Here we use swath (KelpForest_Swath) data for bull kelp recruits assuming that kelp
+on month "8" (August) are successfully settle recruits
 ```{r}
-# filter for bull kelp recruits (Nereocystis luetkeana juv = NERLUEJUV) 
-KFSwath_KRecruit <- KelpForest_Swath %>% filter(classcode == "NERLUEJUV")
+# Step 1: Filter for "Juv" Bull kelp, here we assume that kelp on month "8" are successful recruits 
+kelp_recruits <- swath %>%
+  filter(classcode == "NERLUE") %>%
+  select(year, month, site, zone, transect, count) %>%
+  group_by(year, month, site, zone, transect) %>%
+  summarise(count = mean(count), .groups = "drop") %>%
+  filter(site %in% oregon_sites, month == 8) # OR sites & month "8" August
 
-# cut out non-essential columns
-KFSwath_KRecruit <- KFSwath_KRecruit %>% select(year:count)
-
-# avg per transect (because multiple transects were taken at different depths)
-KFSwath_KRecruit <- KFSwath_KRecruit %>%
-  group_by(year, site, zone, transect) %>%
-  summarise(Kelp_juvs = mean(count))
-
-# filter and separate for central CA (only data available)
-KelpR_df_OR <- KFSwath_KRecruit %>% rowwise() %>%
-  filter(site %in% c("ANDREW_MOLERA_DC", "BUCHON", "LITTLE_IRISH_DC",
-                     "LITTLE_IRISH_UC", "LONE_TREE", "PALO_COLORADO", 
-                     "PINOS", "SOUTH_WRECK_UC"))
-
-# calc year-to-year mean/stdev by all sites
-KelpR_dfyr <- KelpR_df_OR %>%
+#Step 2: Mean succesfull recruitment across space and time
+recruit_mean <- kelp_recruits %>%
   group_by(year, site) %>%
-  summarise(across(Kelp_juvs, list(mean = mean, sd = sd)))
+  summarise(mean_count = mean(count), .groups = "drop")
 
-# calc year-to-year var (number we want). Detrend:
-    # fit linear model
-    Model <- glm(Kelp_juvs_mean ~ year * site, data = KelpR_dfyr)
+#Step 3: Fit GLM to detrend site and year effects & Normalize and calculate sd (temporal noise)
+model_rec <- glm(mean_count ~ year * site, data = recruit_mean)
+ts_detrended <- mean(recruit_mean$mean_count) + residuals(model_rec)
+noise_rec     <- sd(ts_detrended / mean(ts_detrended))
 
-    # mean plus residuals
-    tsDT <- mean(KelpR_dfyr$Kelp_juvs_mean) + Model$residuals
-
-    # make dataframe
-    Model_df <- tibble(year = KelpR_dfyr$year, tsDT)
-
-# normalise and get varaince
-    tsDTnorm <- tsDT/mean(tsDT)
-
-    sd(tsDTnorm) # number we want
+noise_rec # target number
 
 ```
-
 
 #### URCHINS ADULTS
 
 Pull out data for urchins
 ```{r}
-# filter for adult (>2.5cm test diameter) purple and red ("MESFRAAD", "STRPURAD") urchins 
-KFSwatch_Urchins <- KelpForest_Swath %>% filter(classcode %in% c("MESFRAAD", "STRPURAD"))
+# Step 1: Biomass constants (Ling et al. 2015)
+red_bio <- 0.0499 * 7   + 0.0019
+pur_bio <- 0.0499 * 4.1 + 0.0019
 
-# summarize size (test diameter, cm; by year, species, across everywhere)
-Urchin_Size <- KFSwatch_Urchins %>% 
-  filter(!is.na(size)) %>% 
-  uncount(weights = count) 
+# Step 2: Aggregate counts per transect & compute biomass
+urchin_OR <- swath %>%
+  filter(classcode %in% c("MESFRAAD", "STRPURAD")) %>%
+  select(year, site, zone, transect, classcode, count) %>%
+  filter(site %in% oregon_sites) %>%
+  group_by(year, site, zone, transect, classcode) %>%
+  summarise(count = sum(count), .groups = "drop") %>%
+  pivot_wider(names_from = classcode,
+              values_from = count,
+              values_fill = 0) %>%
+  transmute(year, site, zone, transect,
+            red_count    = MESFRAAD,
+            purp_count   = STRPURAD,
+            red_biomass  = red_count  * red_bio,
+            purp_biomass = purp_count * pur_bio,
+            total_biomass = red_biomass + purp_biomass)
 
-Urchin_Size %>% 
-  group_by(year, classcode) %>% 
-  summarise(mean(size), median(size), max(size), min(size), n())
+# Step 3: Spatial variance in biomass
+urchin_var <- urchin_OR %>%
+  pivot_longer(cols = c(red_biomass, purp_biomass, total_biomass),
+               names_to = "spp",
+               values_to = "biomass") %>%
+  group_by(year, site, zone, spp) %>%
+  summarise(var = var(biomass, na.rm = TRUE), .groups = "drop")
 
-Urchin_Size %>% 
-  group_by(classcode) %>% 
-  summarise(mean(size), median(size), max(size), min(size), n())
-
-# calculate biomass from size (following Ling et al 2015 supp table 1)
-# this is the avg kg of an urchin
-red_bio <- (0.0499 * 7 + 0.0019)
-pur_bio <- (0.0499 * 4.1 + 0.0019)
-
-
-# cut out non-essential columns
-KFSwatch_Urchins <- KFSwatch_Urchins %>% select(year:count, site_status) 
-
-# pull out Oregon sites
-KFSwatch_Urchins <- KFSwatch_Urchins %>%
-  filter(site %in% c("GOVERNMENT_POINT", "GULL_ROCK_CEN", "GULL_ROCK_DC",
-                     "GULL_ROCK_UC", "HUMBUG_CLIFF_N", "HUMBUG_CLIFF_S",
-                     "ISLAND_ROCK", "MCKENZIE_W", "NELLIE'S_COVE",
-                     "OTTER_CREST", "OTTER_CREST_DC", "OTTER_ROCK_KELP_E",
-                     "OTTER_ROCK_WALL_E", "REDFISH_ROCKS_KELP_N", "REDFISH_ROCKS_KELP_S",
-                     "REDFISH_ROCKS_MAMADOME_E", "REDFISH_ROCKS_TOWER_E", "REDFISH_ROCKS_TOWER_W",
-                     "REDFISH_ROCKS_WHALEBACK_E", "REDFISH_ROCKS_WHALEBACK_W", "RED_FISH_ROCKS",
-                     "SPOUTING_HORN_KELP", "SPOUTING_HORN_WALL", "WHALE_COVE_CONTROL_DC",
-                     "WHALE_COVE_CONTROL_UC", "WHALE_COVE_RESERVE")) %>% 
-  separate_wider_regex(site,c(site = ".*", "_", side = ".*"))
-
-# Sum within transects
-KFSwatch_Urchins <- KFSwatch_Urchins %>%
-  group_by(year, site, side, zone, classcode, transect, site_status) %>%
-  summarise(count = sum(count))
-
-# pull out spp and rename for joining
-Urchins_df_OR <- KFSwatch_Urchins %>% 
-  pivot_wider(names_from = classcode, values_from = count) %>% 
-  rename(red_count = MESFRAAD, purple_count = STRPURAD) %>% 
-  mutate(red_biomass = red_count*red_bio, purple_biomass = purple_count*pur_bio)
-
-# add urchins to get total
-Urchins_df_OR <- Urchins_df_OR %>% 
-  mutate(Urchins_count = sum(red_count, purple_count, na.rm=T),
-         Urchins_biomass = sum(red_biomass, purple_biomass, na.rm=T))
-
-```
-
-Scaling transition (spatial variance in urchin densities)
-- Using Oregon sites
-- calculate variance among transects, take mean of years
-```{r}
-# sep species out again and the summarise ('Urchins' spp = both)
-Urchins_var_yr <- Urchins_df_OR %>%
-  pivot_longer(cols = c(red_count:Urchins_biomass), names_to = c("spp", ".value"), names_sep = "\\_") %>% 
-  group_by(year, site, side, zone, spp) %>%
-  summarise(Urchin_biomass_var = var(biomass))
-  
-  # using this one (mean of the mean variance by year)  
-  Urchins_var_yr %>% 
+# Step 4: Temporal and overall metrics
+urchin_yearvar <- urchin_var %>%
   group_by(year, spp) %>%
-  summarise(Urchin_biomass_meanvar = mean(Urchin_biomass_var, na.rm = T)) %>% 
-  group_by(spp) %>%  
-  summarise(Urchin_biomass_yearvar = mean(Urchin_biomass_meanvar, na.rm = T))
-  
-  # compare to overall var
-  Urchins_var_yr %>% 
+  summarise(mean_var = mean(var, na.rm = TRUE), .groups = "drop") %>%
   group_by(spp) %>%
-  summarise(Urchin_biomass_meanvar = mean(Urchin_biomass_var, na.rm = T))
+  summarise(year_var = mean(mean_var, na.rm = TRUE))
+
+urchin_overall <- urchin_var %>%
+  group_by(spp) %>%
+  summarise(overall_var = mean(var, na.rm = TRUE))
+
+urchin_yearvar
+urchin_overall # target number
 
 ```
-
 
 #### Urchin recruits
 
 Pull out data for urchin recruits
 ```{r}
-# filter for recruits (<2.5cm test diameter) purple and red (MESFRAAD) urchins 
-KFSwatch_UrchinREC <- KelpForest_Swath %>% filter(classcode %in% c("MESFRAREC", "STRPURREC"))
+# Step 1: Filter for recruits (<2.5cm test diameter) of purple (STRPURREC) and red (MESFRAREC) urchins,
+#    then aggregate counts within each transect.
+urchin_rec <- swath %>%
+  filter(classcode %in% c("MESFRAREC", "STRPURREC")) %>%
+  select(year, site, zone, transect, count) %>%
+  group_by(site, year, transect) %>%
+  summarise(count_transect = sum(count), .groups = "drop")
 
-# cut out non-essential columns
-KFSwatch_UrchinREC <- KFSwatch_UrchinREC %>% select(year:count, site_status) 
+# Step 2: Collapse to site–year totals
+urchin_rec_sy <- urchin_rec %>% #site-year "sy"
+  group_by(site, year) %>%
+  summarise(count = sum(count_transect), .groups = "drop")
 
-# Sum within transects
-KFSwatch_UrchinREC <- KFSwatch_UrchinREC %>%
-  group_by(year, site, zone, classcode, transect, site_status) %>%
-  summarise(count = sum(count))
+# Step 3: Fit a zero‑inflated Poisson with site and nested year random effects
+brms_rec <- brm(formula = count ~ 1 + (1 | site / year), #count ~ site_code + (1 | site_code / year)
+                family  = zero_inflated_poisson(),
+                data    = urchin_rec_sy,
+                iter    = 4000,
+                warmup  = 1000,
+                thin    = 3,
+                chains  = 3,
+                cores   = 3)
 
+summary(brms_rec)
+plot(brms_rec)
 
-# Calc year-to-year mean/stdev across all transects
-KFSwatch_UrchinRECyr <- KFSwatch_UrchinREC %>% 
-  group_by(year) %>% 
-  summarise(across(count, list(mean = mean, sd = sd)))
+# Step 4: Extract posterior draws for the year‐within‐site sd parameter
+post <- as_draws_df(brms_rec)
 
+# Parameter name: sd_site:year__Intercept
+log_sd_year <- post[["sd_site:year__Intercept"]]
 
-# plot
-ggplot(KFSwatch_UrchinREC %>% group_by(site, year) %>% 
-      summarise(across(count, list(mean = mean)))) +
-  geom_line(aes(y = count_mean, x = year, color = site )) +
-  theme(legend.position="none") +
-  geom_line(data = KFSwatch_UrchinRECyr,
-            aes(y = count_mean, x = year), size = 1) +
-  theme(legend.position="none")
+# Step 5: Compute the mean of the posterior sd (the “temporal noise” estimate)
+temporal_noise_urchin <- mean(log_sd_year)
 
-
-#calc yr2yr var ----
-KFSwatch_UrchinRECyr %>% 
-  ungroup %>% 
-  summarise(across(count_mean:count_sd, list(mean = mean, sd = sd)))
-
-
-# detrend:
-    # fit linear model
-    Model <- glm(KFSwatch_UrchinRECyr$count_mean ~ KFSwatch_UrchinRECyr$year)
-    
-    # mean plus residuals
-    tsDT <- mean(KFSwatch_UrchinRECyr$count_mean) + Model$residuals
-    
-    # make dataframe
-    Model_df <- tibble(year = KFSwatch_UrchinRECyr$year, tsDT)
-    
-    ggplot(Model_df) + 
-      geom_line(aes(y = tsDT, x = year))
-
-# normalise and get varaince
-    tsDTnorm <- tsDT/mean(tsDT)   
-    
-    sd(tsDTnorm)
+temporal_noise_urchin # target number
 
 ```
 
