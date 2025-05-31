@@ -14,7 +14,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(dplyr)
 library(readr)
-library(nimble)
 library(tidyverse)
 library(mcmcplots)
 library(MCMCvis)
@@ -81,9 +80,6 @@ O.G. data (look for all "tuffy" data-sets): https://data.piscoweb.org/metacatui/
 
 ##INPUT DATA
 ```{r}
-# Load nimble
-source("attach.nimble.R")
-
 # Load PISCO data
 pisco <- read_csv("PISCO_all_years.csv") #PISCO_all_years, #read_csv("PISCO_all_years.csv"), # source("PISCO_data_prep.R")
 
@@ -94,29 +90,179 @@ urchins_raw <- pisco %>%
                            "PSGX00","SHCX00","TRHX00","IPTAXX")) # 14 sites
 
 # Group (transects) by year, site_code, zone, replicate, 
-# then sum within transects, and compute annual mean and sd
+# then sum/mean within transects, and compute annual mean
 urchins <- urchins_raw %>%
   group_by(year, site_code, zone, replicate) %>%
-  summarise(count = sum(count))
+  summarise(count = sum(count),
+            .groups = "drop")
 
 # Log-transform counts (add 1 to avoid log(0))
 urchins <- urchins %>%
   mutate(log_count = log(count + 1))
+
+# Explore data
+hist(urchins$count)
+hist(urchins$log_count)
 
 ```
 
 ## MODEL URCHIN RECRUITMENT
 
 Objective:
-1. estimate the normalized year to year variance (SD) of incoming recruits using a 
-log normal distribution of recruitment counts
+1. estimate the normalized year to year variance (SD) by site of incoming recruits...
+   using a Poisson distribution for zero inflated values. 
+Note: sea urchin recruitment follows a log-normal distribution
 
+Aim:
 I'd be building a hierarchical structure where my incoming settlers data informs
 a log-normal distributed annual means, and those annual means inform a normally 
-distributed year to year variance (SD)
+distributed year to year variance (SD). I'll use a zero inflated poisson distribution
 
-## CURRENT VERSION OF THE MODEL
+Model(s) method(s):
+1. brms
+2. nimble
+
+
+## 1) BRMS VERSION OF THE MODEL
 ```{r}
+# Load brms
+library(brms)
+library(posterior)
+
+# Model
+brms_model <- brm(formula = count ~ site_code + (1 | site_code / year),
+                   family  = zero_inflated_poisson(), 
+                   data    = urchins,
+                   iter    = 4000,
+                   warmup  = 1000,
+                   thin    = 3,
+                   chains  = 3,
+                   cores   = 3)
+
+summary(brms_model)
+
+plot(brms_model)
+
+# Get posterior draws to get the temporal (normalized) standard deviation (noise)
+post <- as_draws_df(brms_model)
+
+log_sd <- post[["sd_site_code:year__Intercept"]]
+
+mean(log_sd) #number we want
+```
+
+## 2) NIMBLE VERSION OF THE MODEL
+```{r}
+# Load nimble
+library(nimble)
+source("attach.nimble.R")
+
+# Step 1 prep data
+urchins <- urchins %>%
+  mutate(presence = as.numeric(count > 0),
+         site_idx = as.integer(as.factor(site_code)),
+         year_idx = as.integer(as.factor(year)),
+         site_year_idx = as.integer(as.factor(paste(site_code, year, sep = "_"))))
+
+# Step 2 nimble code/model
+nimble_code <- nimbleCode({
+  
+  # Hyper priors
+  tau_eps ~ dgamma(0.1, 0.1)
+  sd_eps  <- 1 / sqrt(tau_eps)  # This is the SD you're after
+  pi      ~ dbeta(1, 1)     # Common zero-inflation prob across all obs
+
+  # Priors for site fixed effects (intercepts on log-scale)
+  for (s in 1:n_sites) {
+    
+    beta_site[s] ~ dnorm(0, 0.001)
+    
+  }#s
+
+  # Random effects for site:year (process model)
+  for (j in 1:n_site_years) {
+    
+    eps[j] ~ dnorm(0, tau_eps)
+    
+  }#j
+
+  # Zero-inflation parameter
+  for (i in 1:n_obs) {
+    
+    psi[i] ~ dbern(pi)  # Zero-inflation indicator
+
+    # Linear predictor (process model)
+    log(lambda[i]) <- beta_site[site_idx[i]] + eps[site_year_idx[i]]
+
+    # Observation model
+    count[i] ~ dpois(psi[i] * lambda[i])  # Zero-inflated Poisson
+    
+  }#n_obs
+  
+})#nimble_code
+
+# Step 3 specify parameters, data, constants, and initial values
+parameters <- c("sd_eps", "tau_eps", "pi")
+
+nimble_data <- list(count = urchins$count)
+
+nimble_constants <- list(n_obs         = nrow(urchins),
+                         n_sites       = length(unique(urchins$site_idx)),
+                         n_site_years  = length(unique(urchins$site_year_idx)),
+                         site_idx      = urchins$site_idx,
+                         site_year_idx = urchins$site_year_idx)
+
+initial_conditions <- list(beta_site = rep(0, n_sites),
+                           eps       = rep(0, n_site_years),
+                           tau_eps   = 1,
+                           pi        = 0.2,
+                           psi       = rep(1, n_obs))
+
+# Step 4 compile and Run MCMC
+nimble_model <- nimbleMCMC(code      = nimble_code, 
+                           constants = nimble_constants, 
+                           data      = nimble_data, 
+                           inits     = initial_conditions,
+                           monitors  = parameters,
+                           niter     = 40000,
+                           nburnin   = 20000,
+                           nchains   = 3,
+                           thin      = 40,
+                           summary   = TRUE,
+                           samplesAsCodaMCMC = TRUE)
+
+# Step 5 analyze model results
+summary(nimble_model)
+print(nimble_model$summary)
+attach.nimble(nimble_model$samples)
+# mcmcplot(nimble_model$samples)
+
+# Density plots
+densplot(nimble_model$samples[, "sd_eps"],
+         main = "Posterior density of normalized recruitment variance",
+         xlab = "Recruirtment normalized variance (sd)",
+         ylab = "Posterior density")
+
+# Posterior check
+MCMCtrace(object = nimble_model$samples,
+          pdf    = FALSE, # no export to PDF
+          ind    = TRUE, # separate density lines per chain
+          params = c("sd_eps", "tau_eps", "pi"))
+
+apply(sd_eps,2,median)
+apply(sd_eps,2,quantile,c(0.025,0.5,0.975))
+
+# Step 6 extract the standard deviation of interest
+mean(sd_eps)  #this is the temporal (within-site/year) SD on norm scale
+
+```
+
+## WORKING VERSION OF THE MODEL
+```{r}
+# Load nimble
+library(nimble)
+source("attach.nimble.R")
+
 # Nimble model - Fun begins
 model_code <- nimbleCode({
   
@@ -137,7 +283,7 @@ model_code <- nimbleCode({
   for(j in 1:n_years) {
     
     # Process model: latent true log recruitment per year
-    log_recruit[j] ~ dnorm(year_effect[j], sd = sigma_proc)
+    log_recruit[j] <- dnorm(year_effect[j], sd = sigma_proc)
     
   }#j
   
@@ -188,8 +334,8 @@ mcmcplot(mcmc_output$samples)
 
 # Non-normal year to year variance of recruitment
 densplot(mcmc_output$samples[, "sigma_obs"],
-         main = "Posterior density of log-norm recruitment variance",
-         xlab = "Non-Normal variance (sd)")
+         main = "Posterior density of Log-Normal recruitment variance",
+         xlab = "Log-Normal variance (sd)")
 mean(sigma_obs) #number I want in log_normal space
 
 # Normalize the year effects (back-transform from log-scale)
@@ -203,7 +349,19 @@ plot(density(norm_sd_mcmc),
      xlab = "Normalized variance (sd)")
 
 ```
+## POSTERIOR PREDICTIVE CHECK
+```{r}
+MCMCtrace(object = mcmc_output$samples,
+          pdf = FALSE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
+          params = "sigma_obs")
 
+median(sigma_obs)
+
+apply(sigma_obs,2,median)
+apply(sigma_obs,2,quantile,c(0.025,0.5,0.975))
+
+```
 
 ## OLDER VERSION OF THE MODEL
 ```{r}
@@ -289,4 +447,5 @@ plot(density(norm_sd_mcmc),
      xlab = "Norm_sd")
 
 ```
+
 
