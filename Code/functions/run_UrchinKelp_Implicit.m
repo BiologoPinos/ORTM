@@ -5,7 +5,7 @@ function [kt,ut,GC,RK_noise] = run_UrchinKelp_Implicit(kelp, urchin, tmax, RR, k
 % see parent file (Para) for parameter values
 
 % Runs with:
-% PredUrchinKelp_ImplicitCC.m
+% ORTM_model_otter.m
 
 
 %% Unpack structures--------------------------
@@ -139,11 +139,11 @@ end
         % plot(1:10000, sJ.*(1-exp(-alpha*(1:10000)))) % basic IDD
         % plot(1:10000, sJ.*(1-exp(-alpha*(1:10000)))- 0.5*alpha^2 * exp(-alpha*(1:10000)) * alphavar % scaling transition
         
-    % linear predation (e.g. sheep head)
+    % type I linear predation (e.g. sheep head)
         % hiding adults 
         sH = exp(-MH -PH.*nt(t,:,:) - F);
         % exposed adults
-        sE = exp(-ME -Psi .* (PE.*nt(t,:,:) + F) );
+        sE = exp(-ME -Psi.*(PE.*nt(t,:,:) + F));
 
     % % % type II predation (e.g. sea otters)
     % %     % hiding adults 
@@ -273,70 +273,3 @@ ksetT = RKset .* sum(reproWeight .* kt(2,max(1,t-lag),:)) + RKr;
 end
 
 end
-
-
-% % 
-% % %% Run kelp 🌿--------------------------
-% % 
-% % % kelp restoration
-% %     if kelp.restore == "Y"
-% %         if ismember(t, dist_yrs(1) + kelp.resttime + (0:kelp.restlgth-1))
-% %             RK = RK + kelp.restn;
-% %         end
-% %     end
-% % 
-% % % recruitment + timing + noise
-% % RKnew = RK .* RTk(t) .* (sum(reproWeight .* kt(2,max(1,t-lag),:))) .* RK_noise(t,:,:);
-% % 
-% %     % total incoming settling spore (before density dependence)
-% %     % to be used for intra-cohort part of DD
-% %     % if ksetn = 0 & k2n = 0 then the DD function is NaN, so we
-% %     % will set a very low number instead. This wont affect dynamics, since it it then x0. 
-% %     ksetn = max(RKnew.*kt(2,t,:), 10^-10);
-% % 
-% %      % DD survival of young
-% %             % Adult densities to be used for inter-cohort part of DD
-% %             % NOTE TO SELF: need to make proportional density in 4+ popmodel
-% %             k2n = max(kt(2,t,:), 10^-10);
-% % 
-% %             % DD functions
-% % 
-% %             % for Beverton-Holt DD function 
-% %             % (which doesnt use scale transitions, since only settlers)
-% %             % note this basic form assumes that the slope at the orgin = 1
-% %             if ddD == 1
-% %                 sY = 1/(1+ksetn./mu);
-% % 
-% %             else % for mixed and ricker DD functions
-% %                 DD = ( (ddD-1).*k2n.*exp(mu.*ddD.*k2n) ) ./ (ddD.*ksetn.*exp(mu.*ddD.*k2n) + exp(mu.*k2n) .* ((ddD-1).*k2n-ddD.*ksetn)  );
-% % 
-% %                 % second derivmutive of mixed DD function
-% %                 % this has been calculted using the matlab solver, see ExploringMixedDD_v0.m 
-% %                 DD2 = (2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)).^2)./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^3 - (k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(2.*mu.*exp(mu.*k2n).*(ddD - 1) + mu.^2.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^3.*ksetn.*mu.^2.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 - (2.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 + (2.*ddD.*mu.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) + (ddD.^2.*mu.^2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) - (2.*ddD.*mu.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2;
-% % 
-% %                 % per capita survival of settlers including scale transition
-% %                 sY = DD + 0.5.*DD2.*muvar;
-% %             end            
-% % 
-% % % projection matrix (bull Kelp)
-% %     Mk = [zeros(1,1,RR),...
-% %           RKnew .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda, zeros(1,1,RR);
-% % 
-% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
-% %           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
-% %           zeros(1,1,RR);
-% % 
-% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
-% %           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
-% %           (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:))];            
-% % 
-% %     % if Mk(3,1,:)>1; warning('Drift survival >1'); end
-% % 
-% % % next yrs numbers
-% %     kt(:,t+1,:) = pagemtimes(Mk,kt(:,t,:));
-% % 
-% % 
-% % 
-% % end
-% % 
-% % end

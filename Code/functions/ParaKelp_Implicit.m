@@ -2,7 +2,7 @@ function kelp = ParaKelp_Implicit(tmax)
 
 % Description:
 % sets parameter (para) values for kelp portion of the model
-% relevant to PredUrchinKelp_ImplicitCC.m
+% relevant to ORTM_model_otter.m
 
 % Parameter values follow this order
     Species = {'Giant_kelp'; 'Bull_kelp'};

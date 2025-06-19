@@ -2,7 +2,7 @@ function urchin = ParaUrchin_Implicit(tmax)
 
 % Description:
 % sets parameter (para) values for urchin portion of the model
-% relevant to PredUrchinKelp_ImplicitCC.m
+% relevant to ORTM_model_otter.m
 
 % Parameter values follow this order
     Species = {'Urchins_CA'; 'Urchins_OR'};
@@ -21,7 +21,7 @@ function urchin = ParaUrchin_Implicit(tmax)
     % vector that dictates if reproduction occurs in that time step
     % urchins reproduce 90% January-September (March-May = spring)
     RTu = repmat([0.05 0.54 0.36 0.05;...
-                         0.2 0.2 0.5 0.1],1,tmax/4);
+                  0.2 0.2 0.5 0.1],1,tmax/4);
 
 % Growth    
     % proportion maturing from juvenile to adults
@@ -47,7 +47,8 @@ function urchin = ParaUrchin_Implicit(tmax)
         % exposed
         PE = [0.0065; 0.3650]; % 0;
         % hiding
-       PH = [PE(1)*0.5; PE(2)*0.5]; % 0;
+        PH = PE.*0.5;
+        % PH = [PE(1)*0.5; PE(2)*0.5]; % 0;
 
     % Fishing rate
         F = [0; 0];   
@@ -55,7 +56,8 @@ function urchin = ParaUrchin_Implicit(tmax)
     % Discount rate for juv survival
         % PLD in days
         PLD = [65; 91];
-        tau = [1-PLD(1)/91; 1-PLD(2)/91];
+        tau = 1-PLD./91;
+        % tau = [1-PLD(1)/91; 1-PLD(2)/91];
 
 
 % **behavioural switching function (hiding <> exposed)
@@ -82,6 +84,6 @@ function urchin = ParaUrchin_Implicit(tmax)
                         'RowNames', Species);
 
 % select species
-    urchin = Paratable('Urchins_CA',:);
+    urchin = Paratable('Urchins_OR',:);
 
 end

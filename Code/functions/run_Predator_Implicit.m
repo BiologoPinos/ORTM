@@ -83,13 +83,4 @@ function [N_t,B_t] = run_Predator_Implicit(pred, T, RR, nt1, dist)
         B_t = N_t.*repmat(Func_Length2Weight(pred.x',pred.y,pred.z),1,T+1,RR);
 
 end
-
-
-
-
-
-
-
-
-    
-    
+  
