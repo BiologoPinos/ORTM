@@ -1,0 +1,792 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={PISCO\_urchin\_tuffy},
+  pdfauthor={Andrés Pinos-Sánchez},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{PISCO\_urchin\_tuffy}
+\author{Andrés Pinos-Sánchez}
+\date{2025-05-15}
+
+\begin{document}
+\maketitle
+
+\#\#AIM OF THE SCRIPT Obtain the year to tear variability of urchin
+recruitment (std) in Oregon
+
+\#\#INPUT RAW DATA
+
+This data is from PISCO surveys posted by MENGE, for intertidal
+recruitmentacross the coast O.G. data (look for all ``tuffy''
+data-sets):
+\url{https://data.piscoweb.org/metacatui/view/doi\%3A10.6085\%2FAA\%2Fpisco_recruitment.1477.1}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# \# Input data from PISCO, data name corresponds to collection year (not deployment)}
+\CommentTok{\# PISCO\_data\_1989 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.124.1.csv")  |\textgreater{} mutate(year = 1989, .before = 1)}
+\CommentTok{\# PISCO\_data\_1990 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.126.1.csv")  |\textgreater{} mutate(year = 1990, .before = 1)}
+\CommentTok{\# PISCO\_data\_1991 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.128.1.csv")  |\textgreater{} mutate(year = 1991, .before = 1)}
+\CommentTok{\# PISCO\_data\_1992 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.130.1.data") |\textgreater{} mutate(year = 1992, .before = 1)}
+\CommentTok{\# PISCO\_data\_1993 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.132.1.data") |\textgreater{} mutate(year = 1993, .before = 1)}
+\CommentTok{\# PISCO\_data\_1994 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.134.1.csv")  |\textgreater{} mutate(year = 1994, .before = 1)}
+\CommentTok{\# PISCO\_data\_1995 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.136.1.data") |\textgreater{} mutate(year = 1995, .before = 1)}
+\CommentTok{\# PISCO\_data\_1996 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.138.1.data") |\textgreater{} mutate(year = 1996, .before = 1)}
+\CommentTok{\# \# 1997 skipped}
+\CommentTok{\# PISCO\_data\_1998 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.140.1.data") |\textgreater{} mutate(year = 1998, .before = 1)}
+\CommentTok{\# PISCO\_data\_1999 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.142.1.data") |\textgreater{} mutate(year = 1999, .before = 1)}
+\CommentTok{\# PISCO\_data\_2000 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.144.1.csv")  |\textgreater{} mutate(year = 2000, .before = 1)}
+\CommentTok{\# PISCO\_data\_2001 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.146.1.data") |\textgreater{} mutate(year = 2001, .before = 1)}
+\CommentTok{\# PISCO\_data\_2002 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.148.1.csv")  |\textgreater{} mutate(year = 2002, .before = 1)}
+\CommentTok{\# PISCO\_data\_2003 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.150.1.data") |\textgreater{} mutate(year = 2003, .before = 1)}
+\CommentTok{\# PISCO\_data\_2004 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.152.1.csv")  |\textgreater{} mutate(year = 2004, .before = 1)}
+\CommentTok{\# PISCO\_data\_2005 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.154.1.csv")  |\textgreater{} mutate(year = 2005, .before = 1)}
+\CommentTok{\# PISCO\_data\_2006 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.156.1.data") |\textgreater{} mutate(year = 2006, .before = 1)}
+\CommentTok{\# PISCO\_data\_2007 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.1364.1.data")|\textgreater{} mutate(year = 2007, .before = 1)}
+\CommentTok{\# PISCO\_data\_2008 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.1366.1.csv") |\textgreater{} mutate(year = 2008, .before = 1)}
+\CommentTok{\# PISCO\_data\_2009 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.1438.1.csv") |\textgreater{} mutate(year = 2009, .before = 1)}
+\CommentTok{\# PISCO\_data\_2010 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.1446.1.csv") |\textgreater{} mutate(year = 2010, .before = 1)}
+\CommentTok{\# PISCO\_data\_2011 \textless{}{-} read\_csv("Datasets/doi\_10.6085\_AA\_pisco\_recruitment.1464.1.txt") |\textgreater{} mutate(year = 2011, .before = 1)}
+\CommentTok{\# }
+\CommentTok{\# \# Combine all datasets}
+\CommentTok{\# PISCO\_all\_years \textless{}{-} bind\_rows(PISCO\_data\_1989, PISCO\_data\_1990, PISCO\_data\_1991, }
+\CommentTok{\#                              PISCO\_data\_1992, PISCO\_data\_1993, PISCO\_data\_1994, }
+\CommentTok{\#                              PISCO\_data\_1995, PISCO\_data\_1996, PISCO\_data\_1998,}
+\CommentTok{\#                              PISCO\_data\_1999, PISCO\_data\_2000, PISCO\_data\_2001,}
+\CommentTok{\#                              PISCO\_data\_2002, PISCO\_data\_2003, PISCO\_data\_2004, }
+\CommentTok{\#                              PISCO\_data\_2005, PISCO\_data\_2006, PISCO\_data\_2007, }
+\CommentTok{\#                              PISCO\_data\_2008, PISCO\_data\_2009, PISCO\_data\_2010, }
+\CommentTok{\#                              PISCO\_data\_2011)}
+
+\CommentTok{\# \# Print and explore}
+\CommentTok{\# print()}
+\CommentTok{\# summary()}
+ 
+\CommentTok{\# Save table}
+\CommentTok{\# write.csv(PISCO\_all\_years, "PISCO\_all\_years.csv", row.names = FALSE)}
+\end{Highlighting}
+\end{Shaded}
+
+\#\#INPUT DATA
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load PISCO data}
+\NormalTok{pisco }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\StringTok{"PISCO\_all\_years.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Rows: 77630 Columns: 15
+## -- Column specification --------------------------------------------------------
+## Delimiter: ","
+## chr  (7): sample_month, site_code, exposure, zone, collector_type, sampler, ...
+## dbl  (6): year, replicate, proportion_sampled, count_classcode, count, metho...
+## date (2): deploy_date, collect_date
+## 
+## i Use `spec()` to retrieve the full column specification for this data.
+## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Filter for urchin taxa and remove unwanted sites}
+\NormalTok{urchins\_raw }\OtherTok{\textless{}{-}}\NormalTok{ pisco }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(count\_classcode }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"66"}\NormalTok{, }\StringTok{"67"}\NormalTok{, }\StringTok{"70"}\NormalTok{),}
+         \SpecialCharTok{!}\NormalTok{site\_code }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"CMEN00"}\NormalTok{, }\StringTok{"CMES00"}\NormalTok{, }\StringTok{"IFBRXX"}\NormalTok{, }\StringTok{"KHLX00"}\NormalTok{,}
+                           \StringTok{"PSGX00"}\NormalTok{, }\StringTok{"SHCX00"}\NormalTok{, }\StringTok{"TRHX00"}\NormalTok{, }\StringTok{"IPTAXX"}\NormalTok{))}
+
+\CommentTok{\# Aggregate counts per transect, then per year}
+\NormalTok{urchins }\OtherTok{\textless{}{-}}\NormalTok{ urchins\_raw }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(year, site\_code, zone, replicate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{count =} \FunctionTok{sum}\NormalTok{(count), }\AttributeTok{.groups =} \StringTok{"drop"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{log\_count =} \FunctionTok{log}\NormalTok{(count }\SpecialCharTok{+} \DecValTok{1}\NormalTok{))  }\CommentTok{\# Log{-}transform counts}
+
+\CommentTok{\# Quick visual check}
+\FunctionTok{hist}\NormalTok{(urchins}\SpecialCharTok{$}\NormalTok{count)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(urchins}\SpecialCharTok{$}\NormalTok{log\_count)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-2-2.pdf}
+
+\subsection{MODEL URCHIN RECRUITMENT}\label{model-urchin-recruitment}
+
+Objective: 1. estimate the normalized year to year variance (SD) by site
+of incoming recruits Note: sea urchin recruitment follows a non-normal
+distribution
+
+Aim: I'd be building a hierarchical structure where my incoming settlers
+data informs a non-normal distributed annual means, and those annual
+means inform a normally distributed year to year variance (SD).
+
+Model(s) method(s): 1. BRMS 2. NIMBLE
+
+\subsection{1) BRMS MODEL}\label{brms-model}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load libraries}
+\FunctionTok{library}\NormalTok{(brms)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'brms' was built under R version 4.4.3
+\end{verbatim}
+
+\begin{verbatim}
+## Loading required package: Rcpp
+\end{verbatim}
+
+\begin{verbatim}
+## Loading 'brms' package (version 2.22.0). Useful instructions
+## can be found by typing help('brms'). A more detailed introduction
+## to the package is available through vignette('brms_overview').
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'brms'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:stats':
+## 
+##     ar
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(posterior)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'posterior' was built under R version 4.4.3
+\end{verbatim}
+
+\begin{verbatim}
+## This is posterior version 1.6.1
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'posterior'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     mad, sd, var
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     %in%, match
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit zero{-}inflated Poisson model with nested random effects}
+\NormalTok{brms\_model }\OtherTok{\textless{}{-}} \FunctionTok{brm}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ count }\SpecialCharTok{\textasciitilde{}}\NormalTok{ site\_code }\SpecialCharTok{+}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{|}\NormalTok{ site\_code }\SpecialCharTok{/}\NormalTok{ year), }\CommentTok{\#Nested (site‐specific) Year Variance}
+  \CommentTok{\#formula = count \textasciitilde{} site\_code + (1 | site\_code) + (1 | year), \#Global (pooled) Year Variance}
+  \AttributeTok{family  =} \FunctionTok{zero\_inflated\_poisson}\NormalTok{(),}
+  \AttributeTok{data    =}\NormalTok{ urchins,}
+  \AttributeTok{iter    =} \DecValTok{4000}\NormalTok{,}
+  \AttributeTok{warmup  =} \DecValTok{1000}\NormalTok{,}
+  \AttributeTok{thin    =} \DecValTok{3}\NormalTok{,}
+  \AttributeTok{chains  =} \DecValTok{3}\NormalTok{,}
+  \AttributeTok{cores   =} \DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Compiling Stan program...
+\end{verbatim}
+
+\begin{verbatim}
+## WARNING: Rtools is required to build R packages, but is not currently installed.
+## 
+## Please download and install the appropriate version of Rtools for 4.4.1 from
+## https://cran.r-project.org/bin/windows/Rtools/.
+\end{verbatim}
+
+\begin{verbatim}
+## Trying to compile a simple C file
+\end{verbatim}
+
+\begin{verbatim}
+## Running "C:/PROGRA~1/R/R-44~1.1/bin/x64/Rcmd.exe" SHLIB foo.c
+## using C compiler: 'gcc.exe (GCC) 13.3.0'
+## gcc  -I"C:/PROGRA~1/R/R-44~1.1/include" -DNDEBUG   -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/Rcpp/include/"  -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppEigen/include/"  -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppEigen/include/unsupported"  -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/BH/include" -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/StanHeaders/include/src/"  -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/StanHeaders/include/"  -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppParallel/include/" -DRCPP_PARALLEL_USE_TBB=1 -I"C:/Users/pinosa/AppData/Local/R/win-library/4.4/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include "C:/Users/pinosa/AppData/Local/R/win-library/4.4/StanHeaders/include/stan/math/prim/fun/Eigen.hpp"  -std=c++1y    -I"C:/rtools44/x86_64-w64-mingw32.static.posix/include"     -O2 -Wall  -mfpmath=sse -msse2 -mstackrealign  -c foo.c -o foo.o
+## cc1.exe: warning: command-line option '-std=c++14' is valid for C++/ObjC++ but not for C
+## In file included from C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppEigen/include/Eigen/Core:19,
+##                  from C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppEigen/include/Eigen/Dense:1,
+##                  from C:/Users/pinosa/AppData/Local/R/win-library/4.4/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+##                  from <command-line>:
+## C:/Users/pinosa/AppData/Local/R/win-library/4.4/RcppEigen/include/Eigen/src/Core/util/Macros.h:679:10: fatal error: cmath: No such file or directory
+##   679 | #include <cmath>
+##       |          ^~~~~~~
+## compilation terminated.
+## make: *** [C:/PROGRA~1/R/R-44~1.1/etc/x64/Makeconf:289: foo.o] Error 1
+\end{verbatim}
+
+\begin{verbatim}
+## WARNING: Rtools is required to build R packages, but is not currently installed.
+## 
+## Please download and install the appropriate version of Rtools for 4.4.1 from
+## https://cran.r-project.org/bin/windows/Rtools/.
+\end{verbatim}
+
+\begin{verbatim}
+## Start sampling
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: There were 241 divergent transitions after warmup. See
+## https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+## to find out why this is a problem and how to eliminate them.
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Examine the pairs() plot to diagnose sampling problems
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+## Running the chains for more iterations may help. See
+## https://mc-stan.org/misc/warnings.html#tail-ess
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Model summary and diagnostics}
+\FunctionTok{summary}\NormalTok{(brms\_model)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: There were 241 divergent transitions after warmup. Increasing
+## adapt_delta above 0.8 may help. See
+## http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+\end{verbatim}
+
+\begin{verbatim}
+##  Family: zero_inflated_poisson 
+##   Links: mu = log; zi = identity 
+## Formula: count ~ site_code + (1 | site_code/year) 
+##    Data: urchins (Number of observations: 534) 
+##   Draws: 3 chains, each with iter = 4000; warmup = 1000; thin = 3;
+##          total post-warmup draws = 3000
+## 
+## Multilevel Hyperparameters:
+## ~site_code (Number of levels: 14) 
+##               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sd(Intercept)     1.85      1.41     0.07     5.17 1.01      473      211
+## 
+## ~site_code:year (Number of levels: 104) 
+##               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## sd(Intercept)     1.97      0.34     1.41     2.75 1.01      955     2370
+## 
+## Regression Coefficients:
+##                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## Intercept          -1.65      2.11    -6.11     2.98 1.00      549      943
+## site_codeCARX00     0.06      3.23    -6.30     8.05 1.01      465      322
+## site_codeCBLN00     0.12      3.30    -7.20     7.18 1.00      813     1166
+## site_codeCBLS00    -2.35      4.09   -10.25     6.78 1.01      328      169
+## site_codeCBLX00    -0.43      3.21    -7.24     6.04 1.01     1102     1217
+## site_codeCMRX00    -0.81      3.21    -7.61     5.86 1.00      753     1624
+## site_codeFCKX00    -0.72      3.06    -7.80     5.39 1.00      713     1154
+## site_codeGHVX00     0.39      3.11    -6.22     6.81 1.00      807     1138
+## site_codeMBYX00    -0.48      3.32    -7.56     6.76 1.00      965     1398
+## site_codePOHX00    -3.38      3.52   -10.99     3.86 1.01      498      230
+## site_codeRKPX00    -1.05      3.33    -8.14     6.44 1.00      546      159
+## site_codeSHLX00     0.35      2.93    -5.97     6.85 1.01      786      983
+## site_codeSRKX00    -0.73      3.23    -8.08     5.42 1.01      663      676
+## site_codeYBHX00    -0.71      3.15    -7.90     6.38 1.01      495      335
+## 
+## Further Distributional Parameters:
+##    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+## zi     0.24      0.07     0.11     0.37 1.00     2477     2379
+## 
+## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+## and Tail_ESS are effective sample size measures, and Rhat is the potential
+## scale reduction factor on split chains (at convergence, Rhat = 1).
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(brms\_model)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-3-1.pdf}
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-3-2.pdf}
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-3-3.pdf}
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-3-4.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Posterior draws for yearly variation across sites}
+\NormalTok{post }\OtherTok{\textless{}{-}} \FunctionTok{as\_draws\_df}\NormalTok{(brms\_model, }\AttributeTok{transform =} \ConstantTok{TRUE}\NormalTok{) }\CommentTok{\#FALSE for log scale}
+\FunctionTok{mean}\NormalTok{(post[[}\StringTok{"sd\_site\_code:year\_\_Intercept"}\NormalTok{]]) }\CommentTok{\#number we want}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.972638
+\end{verbatim}
+
+\subsection{2) NIMBLE VERSION OF THE
+MODEL}\label{nimble-version-of-the-model}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load libraries}
+\FunctionTok{library}\NormalTok{(nimble)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'nimble' was built under R version 4.4.3
+\end{verbatim}
+
+\begin{verbatim}
+## nimble version 1.3.0 is loaded.
+## For more information on NIMBLE and a User Manual,
+## please visit https://R-nimble.org.
+## 
+## Note for advanced users who have written their own MCMC samplers:
+##   As of version 0.13.0, NIMBLE's protocol for handling posterior
+##   predictive nodes has changed in a way that could affect user-defined
+##   samplers in some situations. Please see Section 15.5.1 of the User Manual.
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'nimble'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:stats':
+## 
+##     simulate
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:base':
+## 
+##     declare
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{source}\NormalTok{(}\StringTok{"attach.nimble.R"}\NormalTok{)}
+
+\CommentTok{\# Define model}
+\NormalTok{model\_code }\OtherTok{\textless{}{-}} \FunctionTok{nimbleCode}\NormalTok{(\{}
+  
+  \CommentTok{\# Hyper priors}
+\NormalTok{  beta0      }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dnorm}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{sd =} \DecValTok{10}\NormalTok{)}
+\NormalTok{  sigma\_site }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dunif}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{5}\NormalTok{)}
+\NormalTok{  sigma\_sy   }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dunif}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{5}\NormalTok{)}
+\NormalTok{  sigma\_obs  }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dunif}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{5}\NormalTok{)}
+  
+  \CommentTok{\# Random intercept for each site:}
+  \ControlFlowTok{for}\NormalTok{ (s }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n\_site) \{}
+\NormalTok{    b\_site[s] }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dnorm}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{sd =}\NormalTok{ sigma\_site)}
+\NormalTok{  \} }\CommentTok{\#s}
+  
+  \CommentTok{\# Random intercept for each site×year combo:}
+  \ControlFlowTok{for}\NormalTok{ (j }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n\_sy) \{}
+\NormalTok{    b\_sy[j] }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dnorm}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{sd =}\NormalTok{ sigma\_sy)}
+\NormalTok{  \} }\CommentTok{\#j}
+  
+  \CommentTok{\# “Normalized” (original‐scale) version of sigma\_sy:}
+\NormalTok{  sigma\_sy\_n }\OtherTok{\textless{}{-}} \FunctionTok{exp}\NormalTok{(sigma\_sy) }
+  
+  \CommentTok{\# Likelihood: log(count+1) \textasciitilde{} Normal:}
+  \ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{N) \{}
+\NormalTok{    mu[i]     }\OtherTok{\textless{}{-}}\NormalTok{ beta0 }\SpecialCharTok{+}\NormalTok{ b\_site[site[i]] }\SpecialCharTok{+}\NormalTok{ b\_sy[sy\_index[i]] }\CommentTok{\#process model}
+\NormalTok{    log\_y[i] }\SpecialCharTok{\textasciitilde{}} \FunctionTok{dnorm}\NormalTok{(mu[i], }\AttributeTok{sd =}\NormalTok{ sigma\_obs) }\CommentTok{\#observation model}
+\NormalTok{  \} }\CommentTok{\#i}
+  
+\NormalTok{\}) }\CommentTok{\#model\_code}
+
+\CommentTok{\# Prepare input data}
+\NormalTok{urchins }\OtherTok{\textless{}{-}}\NormalTok{ urchins }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{site =} \FunctionTok{as.integer}\NormalTok{(}\FunctionTok{factor}\NormalTok{(site\_code)),}
+         \AttributeTok{site\_year =} \FunctionTok{paste}\NormalTok{(site\_code, year, }\AttributeTok{sep =} \StringTok{"\_"}\NormalTok{),}
+         \AttributeTok{sy\_index =} \FunctionTok{as.integer}\NormalTok{(}\FunctionTok{factor}\NormalTok{(site\_year)))}
+
+\NormalTok{log\_y    }\OtherTok{\textless{}{-}}\NormalTok{ urchins}\SpecialCharTok{$}\NormalTok{log\_count}
+\NormalTok{site     }\OtherTok{\textless{}{-}}\NormalTok{ urchins}\SpecialCharTok{$}\NormalTok{site}
+\NormalTok{sy\_index }\OtherTok{\textless{}{-}}\NormalTok{ urchins}\SpecialCharTok{$}\NormalTok{sy\_index}
+\NormalTok{N        }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(urchins)}
+\NormalTok{n\_site   }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(site))}
+\NormalTok{n\_sy     }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(sy\_index))}
+
+\NormalTok{nimble.data }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\AttributeTok{log\_y =}\NormalTok{ log\_y, }
+                    \AttributeTok{site =}\NormalTok{ site, }
+                    \AttributeTok{sy\_index =}\NormalTok{ sy\_index)}
+
+\NormalTok{nimble.constants }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\AttributeTok{N =}\NormalTok{ N, }
+                         \AttributeTok{n\_site =}\NormalTok{ n\_site, }
+                         \AttributeTok{n\_sy =}\NormalTok{ n\_sy)}
+
+\CommentTok{\# Initial values}
+\NormalTok{inits }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\AttributeTok{beta0 =} \DecValTok{0}\NormalTok{,}
+              \AttributeTok{b\_site =} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n\_site),}
+              \AttributeTok{b\_sy =} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n\_sy),}
+              \AttributeTok{sigma\_site =} \DecValTok{1}\NormalTok{,}
+              \AttributeTok{sigma\_sy =} \DecValTok{1}\NormalTok{,}
+              \AttributeTok{sigma\_obs =} \DecValTok{1}\NormalTok{)}
+
+\CommentTok{\# Parameters}
+\NormalTok{parameters }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"beta0"}\NormalTok{, }\StringTok{"sigma\_site"}\NormalTok{, }\StringTok{"sigma\_sy"}\NormalTok{, }\StringTok{"sigma\_sy\_n"}\NormalTok{, }\StringTok{"sigma\_obs"}\NormalTok{)}
+
+\CommentTok{\# Run MCMC}
+\NormalTok{mcmc.output }\OtherTok{\textless{}{-}} \FunctionTok{nimbleMCMC}\NormalTok{(}\AttributeTok{code      =}\NormalTok{ model\_code, }
+                          \AttributeTok{data      =}\NormalTok{ nimble.data,}
+                          \AttributeTok{constants =}\NormalTok{ nimble.constants, }
+                          \AttributeTok{inits     =}\NormalTok{ inits,}
+                          \AttributeTok{monitors  =}\NormalTok{ parameters,}
+                          \AttributeTok{niter     =} \DecValTok{40000}\NormalTok{, }
+                          \AttributeTok{nburnin   =} \DecValTok{20000}\NormalTok{, }
+                          \AttributeTok{thin      =} \DecValTok{40}\NormalTok{, }
+                          \AttributeTok{nchains   =} \DecValTok{3}\NormalTok{,}
+                          \AttributeTok{summary   =} \ConstantTok{TRUE}\NormalTok{,}
+                          \AttributeTok{samplesAsCoda =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Defining model
+\end{verbatim}
+
+\begin{verbatim}
+##   [Note] Detected use of non-constant indexes: site[1], site[2], site[3], site[4], site[5], site[6], site[7], site[8], site[9], site[10], site[11], site[12], site[13], site[14], site[15], site[16], site[17], site[18], site[19], site[20], site[21], site[22], site[23], site[24], site[25], site[26], site[27], site[28], site[29], site[30], site[31], site[32], site[33], site[34], site[35], site[36], site[37], site[38], site[39], site[40], site[41], site[42], site[43], site[44], site[45], site[46], site[47], site[48], site[49], site[50], sy_index[1], sy_index[2], sy_index[3], sy_index[4], sy_index[5], sy_index[6], sy_index[7], sy_index[8], sy_index[9], sy_index[10], sy_index[11], sy_index[12], sy_index[13], sy_index[14], sy_index[15], sy_index[16], sy_index[17], sy_index[18], sy_index[19], sy_index[20], sy_index[21], sy_index[22], sy_index[23], sy_index[24], sy_index[25], sy_index[26], sy_index[27], sy_index[28], sy_index[29], sy_index[30], sy_index[31], sy_index[32], sy_index[33], sy_index[34], sy_index[35], sy_index[36], sy_index[37], sy_index[38], sy_index[39], sy_index[40], sy_index[41], sy_index[42], sy_index[43], sy_index[44], sy_index[45], sy_index[46], sy_index[47], sy_index[48], sy_index[49], sy_index[50], ...
+##          For computational efficiency we recommend specifying these in 'constants'.
+\end{verbatim}
+
+\begin{verbatim}
+## Building model
+\end{verbatim}
+
+\begin{verbatim}
+## Setting data and initial values
+\end{verbatim}
+
+\begin{verbatim}
+## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.
+\end{verbatim}
+
+\begin{verbatim}
+## Checking model sizes and dimensions
+\end{verbatim}
+
+\begin{verbatim}
+## Checking model calculations
+\end{verbatim}
+
+\begin{verbatim}
+## Compiling
+##   [Note] This may take a minute.
+##   [Note] Use 'showCompilerOutput = TRUE' to see C++ compilation details.
+\end{verbatim}
+
+\begin{verbatim}
+## running chain 1...
+\end{verbatim}
+
+\begin{verbatim}
+## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|
+\end{verbatim}
+
+\begin{verbatim}
+## running chain 2...
+\end{verbatim}
+
+\begin{verbatim}
+## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|
+\end{verbatim}
+
+\begin{verbatim}
+## running chain 3...
+\end{verbatim}
+
+\begin{verbatim}
+## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Summarize posterior}
+\FunctionTok{attach.nimble}\NormalTok{(mcmc.output}\SpecialCharTok{$}\NormalTok{samples)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'data.table'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:nimble':
+## 
+##     cube
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:lubridate':
+## 
+##     hour, isoweek, mday, minute, month, quarter, second, wday, week,
+##     yday, year
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:purrr':
+## 
+##     transpose
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:dplyr':
+## 
+##     between, first, last
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(mcmc.output}\SpecialCharTok{$}\NormalTok{samples)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Iterations = 1:500
+## Thinning interval = 1 
+## Number of chains = 3 
+## Sample size per chain = 500 
+## 
+## 1. Empirical mean and standard deviation for each variable,
+##    plus standard error of the mean:
+## 
+##               Mean      SD  Naive SE Time-series SE
+## beta0      0.20816 0.03761 0.0009711      0.0010079
+## sigma_obs  0.31699 0.01096 0.0002830      0.0002905
+## sigma_site 0.05734 0.04051 0.0010459      0.0020329
+## sigma_sy   0.26541 0.02699 0.0006968      0.0006967
+## sigma_sy_n 1.30444 0.03536 0.0009130      0.0009129
+## 
+## 2. Quantiles for each variable:
+## 
+##                2.5%    25%    50%     75%  97.5%
+## beta0      0.132903 0.1842 0.2096 0.23304 0.2808
+## sigma_obs  0.296473 0.3092 0.3168 0.32413 0.3389
+## sigma_site 0.004157 0.0255 0.0503 0.08092 0.1535
+## sigma_sy   0.216749 0.2479 0.2638 0.28250 0.3206
+## sigma_sy_n 1.242032 1.2814 1.3018 1.32644 1.3779
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Extract yearly variation across sites}
+\FunctionTok{quantile}\NormalTok{(sigma\_sy\_n, }\FunctionTok{c}\NormalTok{(}\FloatTok{0.025}\NormalTok{, }\FloatTok{0.5}\NormalTok{, }\FloatTok{0.975}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##     2.5%      50%    97.5% 
+## 1.242032 1.301850 1.377948
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mean}\NormalTok{(sigma\_sy\_n) }\CommentTok{\#Number we want}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.304436
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(sigma\_sy\_n, }\AttributeTok{main =} \StringTok{"Posterior of Normalized Year{-}to{-}Year SD"}\NormalTok{,}
+     \AttributeTok{xlab =} \StringTok{"Normalized SD"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(sigma\_sy, }\AttributeTok{main =} \StringTok{"Posterior of Non{-}Normal Year{-}to{-}Year SD"}\NormalTok{,}
+     \AttributeTok{xlab =} \StringTok{"Non{-}Normal SD"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-4-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# \# Optional diagnostics}
+\FunctionTok{MCMCtrace}\NormalTok{(}\AttributeTok{object =}\NormalTok{ mcmc.output}\SpecialCharTok{$}\NormalTok{samples,}
+          \AttributeTok{pdf =} \ConstantTok{FALSE}\NormalTok{,}
+          \AttributeTok{ind =} \ConstantTok{TRUE}\NormalTok{,}
+          \CommentTok{\# params = "sigma\_sy\_n")}
+          \AttributeTok{params =} \FunctionTok{c}\NormalTok{(}\StringTok{"beta0"}\NormalTok{, }\StringTok{"sigma\_site"}\NormalTok{, }\StringTok{"sigma\_sy"}\NormalTok{, }\StringTok{"sigma\_sy\_n"}\NormalTok{, }\StringTok{"sigma\_obs"}\NormalTok{)) }\CommentTok{\#Posterior predictive check}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-4-3.pdf}
+\includegraphics{PISCO_urchin_tuffy_files/figure-latex/unnamed-chunk-4-4.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{gelman.diag}\NormalTok{(mcmc.output}\SpecialCharTok{$}\NormalTok{samples)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Potential scale reduction factors:
+## 
+##            Point est. Upper C.I.
+## beta0               1       1.01
+## sigma_obs           1       1.00
+## sigma_site          1       1.01
+## sigma_sy            1       1.00
+## sigma_sy_n          1       1.00
+## 
+## Multivariate psrf
+## 
+## 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# mcmcplot(mcmc.output$samples)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{OLD VERSIONS WITH THE WRONG APPROACH
+(ignore)}\label{old-versions-with-the-wrong-approach-ignore}
+
+\end{document}
