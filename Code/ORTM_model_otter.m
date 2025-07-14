@@ -41,24 +41,24 @@
     T2 = 60*4; % for kelp-urchin runs 
 
 % number of replicates (RR) - Max 10000 due to ORSO 
-    RR =  10; % 10000;
+    RR =  1000; % 10000;
 
 % length of run + buffer
     tmax = T2+100; % 1000;
 
 % kelp parameters (Giant or Bull inside "ParaKelp_Implicit" func)
     kelp = ParaKelp_Implicit(tmax);
-    kelp.mu = 1*10^10; % 9*10^-5; % kelp.mu;
+    kelp.mu = 2.5*10^4; % 2.5*10^4; % 1*10^10; % 9*10^5; % kelp.mu;
 
 % urchin parameters
     urchin = ParaUrchin_Implicit(tmax);
-    urchin.RU = 1.5*10^5; % 3*10^5; % urchin.RU;
+    urchin.RU = 2*10^2; % 2*10^2; % 1.5*10^5; % urchin.RU;
 
 % predator scenario (sea otters)
-    % ORSO_data = fullfile(ORSO, 'Table0.csv'); % no otters
+    ORSO_data = fullfile(ORSO, 'Table0.csv'); % no otters
     % ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-N3.csv'); % Pacific city
     % ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-C7.csv'); % Newport
-    ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-S6.csv'); % Port Orford
+    % ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-S6.csv'); % Port Orford
             
     
 %% Disturbance (dist) -------------------------- 

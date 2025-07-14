@@ -43,12 +43,17 @@ function urchin = ParaUrchin_Implicit(tmax)
         % exposed adults
         ME = [0.1; 0.1];
 
-    % predation rate on urchins by predators (otters) (lower = less mortality)
+    % predation (attack) rate on urchins by predators (lower = less mortality)
         % exposed
         PE = [0.0065; 0.3650]; % 0;
         % hiding
-        PH = PE.*0.5;
-        % PH = [PE(1)*0.5; PE(2)*0.5]; % 0;
+        PH = PE.*0.5; % [PE(1)*0.5; PE(2)*0.5]; % 0;
+
+   % handling time or max prey consumed "h = 1/handling time" (relevant for type II)
+        % exposed (1/0.001 = 10^3)
+        HE = [1/0.001; 1/0.001]; % 0;
+        % hiding
+        HH = HE.*0.5; % [HE(1)*0.5; HE(2)*0.5]; % 0;
 
     % Fishing rate
         F = [0; 0];   
@@ -56,8 +61,7 @@ function urchin = ParaUrchin_Implicit(tmax)
     % Discount rate for juv survival
         % PLD in days
         PLD = [65; 91];
-        tau = 1-PLD./91;
-        % tau = [1-PLD(1)/91; 1-PLD(2)/91];
+        tau = 1-PLD./91; % [1-PLD(1)/91; 1-PLD(2)/91]; % 0;
 
 
 % **behavioural switching function (hiding <> exposed)
@@ -80,7 +84,7 @@ function urchin = ParaUrchin_Implicit(tmax)
 
 % join in table
     Paratable = table(RU, RUstdv, RUdist, RTu, gJ, MJ, alpha, alphavar, ...
-                        MH, ME, PE, PH, F, PLD, tau, w1, w2, kmin, ...
+                        MH, ME, PE, PH, HE, HH, F, PLD, tau, w1, w2, kmin, ...
                         'RowNames', Species);
 
 % select species

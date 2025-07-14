@@ -1,11 +1,11 @@
 function Mort = Func_TypeII(a,h,prey)
 % Type II predation/grazing mortlaity
 
-    % Mort = p.c. mortlaity of resource due to grazing
-    % a = attack rate
+    % Mort = p.c. mortality of resource due to foraging
+    % a = attack or predation rate
     % h = 1/handling time (max prey consumed)
     % prey = density of prey
-
+    
 Mort = a./(1+(a.*prey)./h);
 
 

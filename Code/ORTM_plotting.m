@@ -44,39 +44,29 @@ figure
 subplot(2,1,1)
 histogram(mean(sum(kts(1:2,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
 xlabel('Kelp biomass kg')
-ylabel('Number of sims')
 subplot(2,1,2)
 histogram(mean(sum(uts(2:3,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
 xlabel('Urchin biomass kg')
-ylabel('Number of sims')
 
 
-% %% plot kelp biomass v urchin biomass
-% % 
-% % kts_all = reshape(sum(kts(1:2,:,1,1,:)),1,[])*0.006;
-% % uts_all = reshape(sum(uts(1:2,:,1,1,:)),1,[])*0.006;
-% kts_all = reshape(mean(sum(kts(1:2,(end-4):end,1,1,:)),2),1,[])*0.006;
-% uts_all = reshape(mean(sum(uts(2:3,(end-4):end,1,1,:)),2),1,[])*0.006;
-% 
-% % kts_all_k = reshape(mean(sum(kts(1:2,(end-4):end,1,1,kelp_avg>0)),2),1,[])*0.006/60;
-% % uts_all_k = reshape(mean(sum(uts(2:3,(end-4):end,1,1,kelp_avg>0)),2),1,[])*0.006/60;
-% 
-% figure
-% hold on
-% scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
-% % scatter(uts_all_k, kts_all_k, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
-% xline(1.3*60, '--r') % approx cali kg threshold for shift (Ling et al 2015)
-% xline(2.5*60, '--r') % approx global kg threshold for shift (Ling et al 2015)
-% xlabel('Urchin biomass (kg.60m^2)')
-% ylabel('Kelp biomass (kg.60m^2)')
-% xlim([0,600])
-% ylim([0,80*60])
+%% plot kelp biomass v urchin biomass
+
+% sample over 10 yrs (after 10 years)
+kts_all = reshape(mean(sum(kts(1:2,41:80,1,1,:)),2),1,[])*0.006;
+uts_all = reshape(mean(sum(uts(2:3,41:80,1,1,:)),2),1,[])*0.006;
+% plot
+figure
+hold on
+scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
+% axis
+xlabel('Urchin biomass (kg.60m^2)')
+ylabel('Kelp biomass (kg.60m^2)')
 
 
 %% single rep run: urchin-kelp figure and outputs
 
 % which rep? 
-R = 2;
+R = 5;
 
     % calculate if persisting or not (mean over last 1 year)
     % kelp_state = double(kelp_avg(1,1,1,R) > 1)

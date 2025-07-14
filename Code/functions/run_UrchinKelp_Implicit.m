@@ -42,6 +42,8 @@ MH = urchin.MH;
 ME = urchin.ME;
 PH = urchin.PH;
 PE = urchin.PE;
+HH = urchin.HH;
+HE = urchin.HE;
 F = urchin.F;
 PLD = urchin.PLD;
 tau = urchin.tau;
@@ -50,7 +52,6 @@ w2 = urchin.w2;
 kmin = urchin.kmin;
 
 dist_yrs = dist.yrs;
-
     
 %% Vectors for state variables--------------------------
 
@@ -140,16 +141,16 @@ end
         % plot(1:10000, sJ.*(1-exp(-alpha*(1:10000)))- 0.5*alpha^2 * exp(-alpha*(1:10000)) * alphavar % scaling transition
         
     % type I linear predation (e.g. sheep head)
-        % hiding adults 
-        sH = exp(-MH -PH.*nt(t,:,:) - F);
-        % exposed adults
-        sE = exp(-ME -Psi.*(PE.*nt(t,:,:) + F));
+        % % hiding adults 
+        % sH = exp(-MH -PH.*nt(t,:,:) - F);
+        % % exposed adults
+        % sE = exp(-ME -Psi.*(PE.*nt(t,:,:) + F));
 
-    % % % type II predation (e.g. sea otters)
-    % %     % hiding adults 
-    % %     sH = exp(-MH -F -Func_TypeII(PH,10^3,sum(ut(2:3,t,:))).*nt(t,:,:));
-    % %     % exposed adults
-    % %     sE = exp(-ME -Psi .* (F + Func_TypeII(PE,10^3,sum(ut(2:3,t,:))).*nt(t,:,:)));
+    % type II predation (e.g. sea otters)
+        % hiding adults 
+        sH = exp(-MH -F -Func_TypeII(PH,HH,sum(ut(2:3,t,:))).*nt(t,:,:));
+        % exposed adults
+        sE = exp(-ME -Psi .* (F + Func_TypeII(PE,HE,sum(ut(2:3,t,:))).*nt(t,:,:)));
 
 % prop exposed
     % grazing capacity 
