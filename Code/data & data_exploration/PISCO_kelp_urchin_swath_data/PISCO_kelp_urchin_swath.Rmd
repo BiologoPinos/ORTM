@@ -27,7 +27,7 @@ rm(list = ls()) #environment
 set.seed(123)
 
 # Working directory
-setwd("C:/Users/pinosa/Documents/Git/OR_trophic_model/Code/Data_DataExploration/PISCO_kelp_urchin_swath_data")
+# setwd("C:/Users/pinosa/Documents/Git/OR_trophic_model/Code/Data_DataExploration/PISCO_kelp_urchin_swath_data")
 
 ```
 
@@ -56,6 +56,7 @@ quad  <- left_join(quad,  site_status, by = "site")
 
 
 #### BULL KELP ADULTS
+
 Determine: Scaling transition (spatial variance in kelp densities)
 ```{r}
 # Step 1: Filter for Bull kelp (N.luetkeana = NERLUE), and group transects across time & space
@@ -68,7 +69,7 @@ kelp_adult <- swath %>%
   group_by(year, site, zone, transect) %>%
   summarise(plants   = sum(plants),
             stipes   = sum(stipes),
-            biomass  = stipes * 5.18,  # 5.18kg per stipe
+            biomass  = stipes * 5.18,  # 5.18kg per stipe (add a range of variation???)
             .groups = "drop")
 
 # Step 2: Filter Oregon sites (lat ≥42.6673)
@@ -79,14 +80,18 @@ oregon_sites <- sites %>%
 kelp_OR <- kelp_adult %>% filter(site %in% oregon_sites)
 
 # Step 3: Spatial variance workflow
+
+# variability within sites for each year
 kelp_var_site <- kelp_OR %>%
-  group_by(site, year) %>%
+  group_by(year, site) %>%
   summarise(var_biomass = var(biomass, na.rm = TRUE), .groups = "drop")
 
+# variability within sites across years
 mean_var_site <- kelp_var_site %>%
   group_by(site) %>%
   summarise(mean_var = mean(var_biomass, na.rm = TRUE), .groups = "drop")
 
+# variability across sites and years (spatio-tempral variability in OR)
 overall_var <- mean(mean_var_site$mean_var, na.rm = TRUE)
 
 overall_var # target number
@@ -106,7 +111,7 @@ kelp_recruits <- swath %>%
   summarise(count = mean(count), .groups = "drop") %>%
   filter(site %in% oregon_sites, month == 8) # OR sites & month "8" August
 
-#Step 2: Mean succesfull recruitment across space and time
+#Step 2: Mean successful recruitment across space and time
 recruit_mean <- kelp_recruits %>%
   group_by(year, site) %>%
   summarise(mean_count = mean(count), .groups = "drop")
@@ -169,7 +174,7 @@ urchin_overall # target number
 
 ```
 
-#### Urchin recruits
+#### URCHIN RECRUITS
 
 Pull out data for urchin recruits
 ```{r}
@@ -209,6 +214,37 @@ log_sd_year <- post[["sd_site:year__Intercept"]]
 temporal_noise_urchin <- mean(log_sd_year)
 
 temporal_noise_urchin # target number
+
+```
+
+#### KELP AND URCHINS
+
+Plot urchin vs kelp biomass
+```{r}
+# Step 1: join tables
+KU_OR <- kelp_OR %>% 
+  full_join(urchin_OR, by = c("year", "site", "zone", "transect"))
+
+# Step 2: compare kelp v urchins biomasses
+
+  # plot purples alone
+  ggplot(KU_OR) +
+    geom_point(aes(y = biomass, x = purp_biomass, colour = as.factor(year)) )
+  
+  # plot reds alone
+  ggplot(KU_OR) +
+    geom_point(aes(y = biomass, x = red_biomass, colour = as.factor(year)) )
+  
+  # plot both urchins (reshape table first)
+  KU_OR1 <- KU_OR %>% select(year:transect, biomass, red_biomass, purp_biomass) %>%
+    pivot_longer(red_biomass:purp_biomass, names_to = "urchin_type", values_to = "urchin_biomass") %>% 
+    mutate(across(urchin_type,~str_extract(., ".*(?=(_))"))) %>% 
+    mutate(urchin_type = factor(urchin_type, levels = c("purp","red"), labels = c("purple","red")))
+  
+  ggplot(KU_OR1) +
+    geom_point(aes(y = biomass, x = urchin_biomass, colour = urchin_type)) +
+    theme_bw() +
+    labs(x = "Urchin biomass (kg.60m2)", y = "Bull kelp biomass (kg.60m2)", color = "Urchin Type\n")
 
 ```
 
