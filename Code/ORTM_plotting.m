@@ -58,6 +58,9 @@ uts_all = reshape(mean(sum(uts(2:3,41:80,1,1,:)),2),1,[])*0.006;
 figure
 hold on
 scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
+% limits
+xlim([0 150])
+ylim([0 500])
 % axis
 xlabel('Urchin biomass (kg.60m^2)')
 ylabel('Kelp biomass (kg.60m^2)')
@@ -70,14 +73,14 @@ R = 5;
 
     % calculate if persisting or not (mean over last 1 year)
     % kelp_state = double(kelp_avg(1,1,1,R) > 1)
-    
+
 
 % (4*20 yrs avg)
 % preds = mean(PBE);
 Kelp = [max(sum(kts(1:2,(end-80):end,1,1,R))), min(sum(kts(1:2,(end-80):end,1,1,R))), mean(sum(kts(1:2,(end-80):end,1,1,R)))];
 Drift = [max(kts(3,(end-80):end,1,1,R)), min(kts(3,(end-40):end,1,1,R)), mean(kts(3,(end-80):end,1,1,R))];
 Urchins = [max(sum(uts(2:3,(end-80):end,1,1,R))), min(sum(uts(2:3,(end-80):end,1,1,R))), mean(sum(uts(2:3,(end-80):end,1,1,R)))];
- 
+
 % preds_transect = preds*0.006
 Kelp_transect = Kelp*0.006;
 Drift_transect = Drift*0.006;

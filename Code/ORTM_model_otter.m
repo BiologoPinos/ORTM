@@ -46,15 +46,17 @@
 % length of run + buffer
     tmax = T2+100; % 1000;
 
-% kelp parameters (Giant or Bull inside "ParaKelp_Implicit" func)
-    kelp = ParaKelp_Implicit(tmax);
-    kelp.mu = 2.5*10^4; % 2.5*10^4; % 1*10^10; % 9*10^5; % kelp.mu;
+% kelp parameters (Choose your kelp)
+    kelp = ParaKelp_Implicit(tmax, 'Bull_kelp'); % {'Giant_kelp'; 'Bull_kelp'} 
+    kelp.mu = kelp.mu; 
+    % 3*10^4; % 2.5*10^4; % 1*10^10; % 9*10^5; % kelp.mu;
 
-% urchin parameters
-    urchin = ParaUrchin_Implicit(tmax);
-    urchin.RU = 2*10^2; % 2*10^2; % 1.5*10^5; % urchin.RU;
+% urchin parameters (Choose your urchins)
+    urchin = ParaUrchin_Implicit(tmax, 'Urchins_OR'); % {'Urchins_CA'; 'Urchins_OR'}
+    urchin.RU = urchin.RU; 
+    % 8*10^2; % 2*10^2; % 1.5*10^5; % urchin.RU;
 
-% predator scenario (sea otters)
+% predator scenario (Choose your sea otters)
     ORSO_data = fullfile(ORSO, 'Table0.csv'); % no otters
     % ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-N3.csv'); % Pacific city
     % ORSO_data = fullfile(ORSO, 'Scenario-Norm_SuccesSegment-C7.csv'); % Newport
@@ -76,7 +78,7 @@
     % kelp recruitment
     dist.RK = kelp.RK/7; % 0; 
     % change in kelp biomass
-    dist.lambda = kelp.lambda .* repmat([1 1 0.5 0.5],1,tmax/4); %* 0.5;   
+    dist.lambda = kelp.lambda.* repmat([1 1 0.5 0.5],1,tmax/4); %* 0.5;   
     % urchin grazing rates
     dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4);
 
@@ -100,7 +102,7 @@
 
 % KELP 🌿 (choose between giant & bull kelp & start with high drift)
     % [juvenile, adult, drift] 
-    kt0 = [1.17*10^2,1.17*10^2,1.17*10^3]; % Bull-kelp
+    kt0 = [8*10^4,8*10^4,8*10^5]; % Bull-kelp
     % kt0 = [1.17*10^5,1.17*10^5,1.17*10^6]; % Giant-kelp
 
 % URCHINS 🟣 (start low to give system a chance to be in a kelp state)
