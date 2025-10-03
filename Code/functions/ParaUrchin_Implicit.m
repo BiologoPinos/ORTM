@@ -1,8 +1,8 @@
 function urchin = ParaUrchin_Implicit(tmax, species)
 
 % Description:
-% sets parameter (para) values for urchin portion of the model
-% relevant to ORTM_model_otter.m
+    % sets parameter (para) values for urchin portion of the model
+    % relevant to ORTM_model_otter.m
 
 % Validate species:
     species = validatestring(species, {'Urchins_CA'; 'Urchins_OR'});
@@ -22,7 +22,7 @@ function urchin = ParaUrchin_Implicit(tmax, species)
         RUdist = {'normal'; 'log-normal'};
 
     % Recruitment timing function [winter, spring, summer, autumn]
-        RTu = repmat([0.05 0.54 0.36 0.05;...
+        RTU = repmat([0.05 0.54 0.36 0.05;...
                       0.2 0.2 0.5 0.1],1,tmax/4);
 
 % Growth/Maturation:
@@ -33,9 +33,9 @@ function urchin = ParaUrchin_Implicit(tmax, species)
 % Mortality rates (instantaneous):
 
     % Natural instantaneous mortality rate
-        MJ = [0.1; 0.1]; % juveniles
-        MH = [0.1; 0.1]; % hiding adults
-        ME = [0.1; 0.1]; % exposed adults
+        MJU = [0.1; 0.1]; % juveniles
+        MHU = [0.1; 0.1]; % hiding adults
+        MEU = [0.1; 0.1]; % exposed adults
             % strength of recruitment facilitation by adults (DD)            
             alpha = [1*10^-5; 1*10^-5]; % NOT BEING USED IN OR VERSION
             % variance in adult urchin densities
@@ -50,7 +50,7 @@ function urchin = ParaUrchin_Implicit(tmax, species)
         HH = HE.*0.5; % hiding % [HE(1)*0.5; HE(2)*0.5]; % 0;
 
     % Fishing mortality rate (we are assuming no urchin fishery)
-        F = [0; 0]; %
+        FU = [0; 0]; %
 
     % Planktonic larval duration (PLD)
         PLD = [65; 91]; %
@@ -73,8 +73,8 @@ function urchin = ParaUrchin_Implicit(tmax, species)
 % Build urchin populations table:
 
     % join in table
-        Paratable = table(RU, RUstdv, RUdist, RTu, gJ, MJ, alpha, alphavar, ...
-                            MH, ME, PE, PH, HE, HH, F, PLD, tau, w1, w2, kmin, ...
+        Paratable = table(RU, RUstdv, RUdist, RTU, gJ, MJU, alpha, alphavar, ...
+                            MHU, MEU, PE, PH, HE, HH, FU, PLD, tau, w1, w2, kmin, ...
                             'RowNames', Species);
     
     % select species

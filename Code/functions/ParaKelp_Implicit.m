@@ -12,111 +12,83 @@ function kelp = ParaKelp_Implicit(tmax, species)
 
 % Recruitment:
 
-    % successful zoo-spore production
-        RK = [4e4;             % Giant kelp
-              6.21e3;          % Bull kelp
-              6.21e3;          % Bull kelp south
-              6.21e3];         % Bull kelp north
+    % Successful zoo-spore production
+        RK = [4*10^4; 6.21*10^3; 6.21*10^3; 6.21*10^3]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % standard deviation of recruitment
-        RKstdv = [0.389;           % Giant kelp
-                  0.32;            % Bull kelp
-                  0.30;            % Bull kelp south
-                  0];              % Bull kelp north
+    % Standard deviation of recruitment
+        RKstdv = [0.389; 0.32; 0.30; 0]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % strength of density dependence
-        mu = [9e-5;            % Giant kelp
-              2.5e4;           % Bull kelp
-              2.5e4;           % Bull kelp south
-              2.5e4];          % Bull kelp north
+    % Strength of density dependence
+        mu = [9*10^-5; 2.5*10^4; 2.5*10^4; 2.5*10^4]; % [Giant; Bull; Bull_S; Bull_N]
+        % intra-cohort needs larger mu, inter-cohort needs smaller mu
 
-    % relative-per-capita effect on juvenile survival
-        ddD = [0.01;            % Giant kelp
-               1;               % Bull kelp
-               1;               % Bull kelp south
-               1];              % Bull kelp north
+    % Relative-per-capita effect on juvenile survival (Beverton-Holt=1 | Ricker=0)
+        ddD = [0.01; 0.9; 0.9; 0.9]; % [Giant; Bull; Bull_S; Bull_N]
+        % closer to 1 intra-cohort, closer to 0 inter-cohort
 
-    % spatial variance in adult kelp densities
-        muvar = [189090;          % Giant kelp
-                 116535;          % Bull kelp
-                 457553           % Bull kelp south
-                 1899];           % Bull kelp north
+    % Spatial variance in adult kelp densities
+        muvar = [189090; 116535; 457553; 1899]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % recruitment timing function
+    % Recruitment timing function
         RTk = zeros(4, 4 * (tmax/4));
         RTk(1,:) = repmat([0.1 0.1 0.4 0.4], 1, tmax/4); % Giant kelp
         RTk(2,:) = repmat([0 1 0 0], 1, tmax/4);         % Bull kelp
         RTk(3,:) = repmat([0 1 0 0], 1, tmax/4);         % Bull kelp south
         RTk(4,:) = repmat([0 1 0 0], 1, tmax/4);         % Bull kelp north
 
-    % recruitment lag
-        lag = [0 0;     % Giant kelp
-               2 3;     % Bull kelp
-               2 3;     % Bull kelp south
-               2 3];    % Bull kelp north
+    % Recruitment lag
+        RKlag = [0  0;     % Giant kelp
+                 2  3;     % Bull kelp
+                 2  3;     % Bull kelp south
+                 2  3];    % Bull kelp north
 
-    % reproduction weightings
-        reproWeight = [0.5 0.5;   % Giant kelp
-                       0.9 0.1;   % Bull kelp
-                       0.9 0.1;   % Bull kelp south
-                       0.9 0.1];  % Bull kelp north
+    % Reproduction weightings
+        reproWeight = [0.5  0.5;   % Giant kelp
+                       0.9  0.1;   % Bull kelp
+                       0.9  0.1;   % Bull kelp south
+                       0.9  0.1];  % Bull kelp north
 
 % Growth:
 
-    % seasonal growth rate
-        g = [6.825;     % Giant kelp
-             29.65;     % Bull kelp
-             29.65;     % Bull kelp south
-             29.65];    % Bull kelp north
+    % Seasonal growth rate
+        g = [6.825; 29.65; 29.65; 29.65]; % [Giant; Bull; Bull_S; Bull_N]
 
 % Mortality/survival:
 
-    % change in standing biomass
+    % Change in standing biomass
         lambda = zeros(4, 4 * (tmax/4));
         lambda(1,:) = repmat([1 1 1 1], 1, tmax/4);        % Giant kelp
         lambda(2,:) = repmat([0.1 0.8 1 0.9], 1, tmax/4);  % Bull kelp
         lambda(3,:) = repmat([0.1 0.8 1 0.9], 1, tmax/4);  % Bull kelp south
         lambda(4,:) = repmat([0.1 0.8 1 0.9], 1, tmax/4);  % Bull kelp north
 
-    % kelp retention
-        rS = [0.5688;    % Giant kelp
-              0.6;       % Bull kelp
-              0.6;       % Bull kelp south
-              0.6];      % Bull kelp north
+    % Kelp retention
+        rS = [0.5688; 0.6; 0.6; 0.6]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % drift production
-        c = [0.9;       % Giant kelp
-             0.9;       % Bull kelp
-             0.9;       % Bull kelp south
-             0.9];      % Bull kelp north
+    % Drift production
+        c = [0.9; 0.9; 0.9; 0.9]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % drift retention
-        rD = [0.7;       % Giant kelp
-              0.7;       % Bull kelp
-              0.7;       % Bull kelp south
-              0.7];      % Bull kelp north
+    % Drift retention
+        rD = [0.7; 0.7; 0.7; 0.7]; % [Giant; Bull; Bull_S; Bull_N]
 
-    % decomposition
-        d = [0.1;       % Giant kelp
-             0.1;       % Bull kelp
-             0.1;       % Bull kelp south
-             0.1];      % Bull kelp north
+    % Decomposition
+        d = [0.1; 0.1; 0.1; 0.1]; % [Giant; Bull; Bull_S; Bull_N]
 
 % Grazing:
 
-    % attack rates (same for all urchins)
-        aij_template = [0 0.5;
-                        0 0.5;
-                        1 0];
+    % Attack rates (same for all urchins)
+        aij_template = [0   0.5;
+                        0   0.5;
+                        1   0];
         aij = repmat({aij_template}, 4, 1);
 
-    % max prey consumed (same for all urchins)
-        bhij_template = [0 2.985;
-                         0 2.985;
-                         2.985 0];
+    % Max prey consumed (same for all urchins)
+        bhij_template = [0       2.985;
+                         0       2.985;
+                         2.985   0];
         bhij = repmat({bhij_template}, 4, 1);
 
-    % handling time with seasonal scaling (same for all urchins)
+    % Handling time with seasonal scaling (same for all urchins)
         scale = reshape([1 0.9 1.15 1.2], 1,1,4);
         hij = cell(4,1);
         for i = 1:4
@@ -125,7 +97,7 @@ function kelp = ParaKelp_Implicit(tmax, species)
 
 % Build parameter table:
 
-    Paratable = table(RK, RKstdv, mu, ddD, muvar, RTk, lag, reproWeight, ...
+    Paratable = table(RK, RKstdv, mu, ddD, muvar, RTk, RKlag, reproWeight, ...
                       g, lambda, rS, c, rD, d, aij, bhij, hij, ...
                       'RowNames', Species);
 
