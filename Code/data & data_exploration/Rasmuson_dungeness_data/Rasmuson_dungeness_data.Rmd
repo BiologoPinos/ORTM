@@ -1,0 +1,92 @@
+---
+title: "Rasmuson_dungeness_data"
+author: "Andrés Pinos-Sánchez"
+date: "2025-09-08"
+output: html_document
+---
+
+#### AIM OF CODE
+
+Obtain Dungeness crab metrics for ORTM model parameters. Here we use
+data provided by Leif Rasmuson
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+
+# Load libraries
+library(readxl)     
+library(MASS)       
+library(dplyr)      
+library(brms)       
+
+# Clear workspace and set seed
+rm(list = ls()) #environment
+set.seed(123)
+
+# Working directory
+# setwd("C:/Users/pinosa/Documents/Git/OR_trophic_model/Code/Data_DataExploration/Rasmuson_dungeness_data")
+
+```
+
+#### GETTING THE DATA
+
+```{r}
+data <- read_excel("MegalopaeDataAndres.xlsx", sheet = "Sheet1")
+
+# Inspect
+head(data)
+
+# Remove years with missing data (NA)
+data <- data %>% filter(!is.na(Megalopae))
+
+```
+
+#### DUNGENESS CRABS
+
+Determine: standard deviation (noise) of adult densities to get an idea of
+recruitment noise.. We use two methods to be sure
+
+```{r}
+# Fit Negative Binomial GLM (counts ~ year as continuous predictor)
+nb_model <- glm.nb(Megalopae ~ Year, data = data)
+
+summary(nb_model)
+
+# Predict mean and variance per year
+data$pred_mean <- predict(nb_model, type = "response")
+theta <- nb_model$theta   # dispersion parameter
+
+# Negative Binomial variance = mu + mu^2/theta
+data$pred_var <- data$pred_mean + (data$pred_mean^2 / theta)
+data$pred_sd <- sqrt(data$pred_var)
+
+# View results
+print(data[, c("Year", "Megalopae", "pred_mean", "pred_sd")])
+
+```
+
+```{r}
+# Fit Bayesian Negative Binomial model
+bayes_model <- brm(formula = Megalopae ~ Year,
+                   data = data,
+                   family = negbinomial(),
+                   chains = 4, iter = 4000, cores = 4)
+
+summary(bayes_model)
+
+# Get posterior predictions for each year
+post_pred <- posterior_predict(bayes_model, newdata = data, draws = 2000)
+
+# Calculate posterior standard deviations per year
+post_sd <- apply(post_pred, 2, sd)
+
+# Combine with data
+results <- data.frame(Year = data$Year,
+                      Observed = data$Megalopae,
+                      Post_SD = post_sd)
+
+print(results)
+
+
+```
+
+
