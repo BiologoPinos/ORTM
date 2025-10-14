@@ -23,15 +23,17 @@
     find(kelp_avg>0) % persti = find(kelp_avg>0);
     find(kelp_avg==0) % exti = find(kelp_avg==0);
 
+%%
+
 % Plot SIMS persistence (Kelp) over time (for multiple reps, single scenario)
-    figure
+    figure(444)
     hold on
-    plot((1:T2+1),sum(kt2(2,:,:)>0,3),'k','LineWidth',1)
+    plot((1:T2+1),sum(kt2(2,:,:)>0,3),'r','LineWidth',1)
     % xline(dist.yrs,'--r')
     % xline(dist.yrs(end)+8*4+1,'--k')
     % xline(dist.yrs(1)+mngt.time+(1:mngt.length),':k')
     xlabel('Timesteps (seasons)')
-    ylabel('Number of sims persisting')
+    ylabel('Proportion of simulations with persisting kelp forests')
     ylim([0,RR])
 
 
@@ -151,42 +153,42 @@ xlabel('Time (seasons)')
 
 %% Single replicate run: urchin-kelp-crab figure and outputs
 
-R = 2;
-
-% Crabs
-CrabF_total = sum(cfts(:,:,1,R),1); % females summed over age
-CrabM_total = sum(cmts(:,:,1,R),1); % males summed over age
-Crab_total = CrabF_total + CrabM_total;
-
-% Plot dynamics
-figure
-
-% 3) Crabs total
-subplot(3,1,1)
-hold on
-plot((1:(T2+1))'./4, Crab_total')
-xline(dist.yrs./4,'--r')
-grid minor
-xlim([10,(T2+1)/4])
-ylabel('Crabs total (kg/ha)')
-
-% 4) Crabs females by age
-subplot(3,1,2)
-hold on
-plot(repmat((1:(T2+1))'./4,1,5), CrabF_total')
-xline(dist.yrs./4,'--r')
-grid minor
-xlim([10,(T2+1)/4])
-ylabel('Crabs F (age)')
-legend(arrayfun(@(x) sprintf('F%d',x-1), 1:5, 'UniformOutput', false))
-
-% 5) Crabs males by age
-subplot(3,1,3)
-hold on
-plot(repmat((1:(T2+1))'./4,1,5), CrabM_total')
-xline(dist.yrs./4,'--r')
-grid minor
-xlim([10,(T2+1)/4])
-ylabel('Crabs M (age)')
-xlabel('Time (seasons)')
-legend(arrayfun(@(x) sprintf('M%d',x-1), 1:5, 'UniformOutput', false))
+% R = 2;
+% 
+% % Crabs
+% CrabF_total = sum(cfts(:,:,1,R),1); % females summed over age
+% CrabM_total = sum(cmts(:,:,1,R),1); % males summed over age
+% Crab_total = CrabF_total + CrabM_total;
+% 
+% % Plot dynamics
+% figure
+% 
+% % 3) Crabs total
+% subplot(3,1,1)
+% hold on
+% plot((1:(T2+1))'./4, Crab_total')
+% xline(dist.yrs./4,'--r')
+% grid minor
+% xlim([10,(T2+1)/4])
+% ylabel('Crabs total (kg/ha)')
+% 
+% % 4) Crabs females by age
+% subplot(3,1,2)
+% hold on
+% plot(repmat((1:(T2+1))'./4,1,5), CrabF_total')
+% xline(dist.yrs./4,'--r')
+% grid minor
+% xlim([10,(T2+1)/4])
+% ylabel('Crabs F (age)')
+% legend(arrayfun(@(x) sprintf('F%d',x-1), 1:5, 'UniformOutput', false))
+% 
+% % 5) Crabs males by age
+% subplot(3,1,3)
+% hold on
+% plot(repmat((1:(T2+1))'./4,1,5), CrabM_total')
+% xline(dist.yrs./4,'--r')
+% grid minor
+% xlim([10,(T2+1)/4])
+% ylabel('Crabs M (age)')
+% xlabel('Time (seasons)')
+% legend(arrayfun(@(x) sprintf('M%d',x-1), 1:5, 'UniformOutput', false))

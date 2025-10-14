@@ -13,7 +13,7 @@ function crab = ParaCrab_Implicit(tmax, species)
 % Recruitment:
 
     % Recruitment (egg production) (Higgins et al., 1997)
-        RC = [2000000; 2000000];  % eggs per female in fall
+        RC = [2000000; 632];
 
     % Temporal Standard deviation
         RCstdv = [1.26; 1.26]; %% NEED NUMBER
@@ -22,8 +22,12 @@ function crab = ParaCrab_Implicit(tmax, species)
         RCdist = {'normal'; 'log-normal'};
 
     % Recruitment timing function [winter, spring, summer, autumn] (Higgins et al., 1997)
-        RTC = repmat([0 1 0 0; ...
-                      0 1 0 0],1,tmax/4); % all age-0 recruits arrive in spring
+        RTC = repmat([0 0.5 0.5 0; ...
+                      0 0.5 0.5 0],1,tmax/4); % all age-0 recruits arrive in spring
+        % RTC = repmat([0 1 0 0; ...
+        %               0 1 0 0],1,tmax/4); % all age-0 recruits arrive in spring
+
+        beta = [5e-05; 1.58e-3]; %3.48e-3
 
 % Mortality:
 
@@ -42,8 +46,9 @@ function crab = ParaCrab_Implicit(tmax, species)
     % Handling time or max prey consumed "h = 1/handling time" (relevant for type II)
         HC = [1/0.001; 1/0.001]; %% NEED NUMBER
 
-    % Cannibalism 
-        % C = % Happens only on newly settle age 0 crabs
+    % Normalized Cannibalism influence function
+        NCIF = {[0.0028; 0.0315; 0.0516; 0.0772; 0.1085; 0.1457; 0.1457; 0.1457; 0.1457; 0.1457];
+                [0.0028; 0.0315; 0.0516; 0.0772; 0.1085; 0.1457; 0.1457; 0.1457; 0.1457; 0.1457]};
 
     % Planktonic larval duration (PLD)
         % PLD = [182; 182];
@@ -52,7 +57,7 @@ function crab = ParaCrab_Implicit(tmax, species)
 % Build Dungeness populations table:
 
     % join in table
-        Paratable = table(RC, RCstdv, RCdist, RTC, MRC, MJC, MAC, FC, PC, HC, ...
+        Paratable = table(RC, RCstdv, RCdist, RTC, beta, MRC, MJC, MAC, FC, PC, HC, NCIF,  ...
                   'RowNames', Species);
     
     % select species

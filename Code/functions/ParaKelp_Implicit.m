@@ -19,7 +19,7 @@ function kelp = ParaKelp_Implicit(tmax, species)
         RKstdv = [0.389; 0.32; 0.30; 0]; % [Giant; Bull; Bull_S; Bull_N]
 
     % Strength of density dependence
-        mu = [9*10^-5; 2.5*10^4; 2.5*10^4; 2.5*10^4]; % [Giant; Bull; Bull_S; Bull_N]
+        mu = [9*10^-5; 5*10^-5; 5*10^-5; 5*10^-5]; % [Giant; Bull; Bull_S; Bull_N] %2.5*10^4
         % intra-cohort needs larger mu, inter-cohort needs smaller mu
 
     % Relative-per-capita effect on juvenile survival (Beverton-Holt=1 | Ricker=0)

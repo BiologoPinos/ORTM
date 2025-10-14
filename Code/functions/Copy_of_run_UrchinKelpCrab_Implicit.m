@@ -67,7 +67,7 @@ NCIF  = crab.NCIF{1};
 
 % Other parameters
 dist_yrs = dist.yrs;
-
+    
 
 %% VECTORS FOR STATE VARIABLES --------------------------
 
@@ -80,10 +80,7 @@ dist_yrs = dist.yrs;
     
 % Urchin
     ut = NaN(3,tmax,RR);
-    ut(:,1,:) =  repmat(ut1(:),1,1,RR);
-    
-    % ut_post = NaN(3,tmax,RR);
-    % ut_post(:,1,:) = ut(:,1,:);
+    ut(:,1,:) =  repmat(ut1(:),1,1,RR);  
 
 % Grazing capacity
     GC = NaN(tmax,1,RR);
@@ -95,6 +92,8 @@ dist_yrs = dist.yrs;
 % Dungeness crab males
     cmt = NaN(11,tmax,RR);
     cmt(:,1,:) = repmat(cmt1(:),1,1,RR);
+    
+
 
 % Switching function (urchins), set Psi to 1
     Psi = 1;
@@ -181,9 +180,8 @@ for t = 1:tmax
     
         % Extract post-predation (end-of-season) biomasses
         ut_post = ut_d(:, end, :);   % 3 x 1 x RR
-        % ut_post(:,t+1,:) = ut_d(:, end, :);   % 3 x 1 x RR
         cft_post = cft_d(:, end, :); % 11 x 1 x RR
-        cmt_post = cmt_d(:, end, :); % 11 x 1 x RR
+        cmt_post = cmt_d(:, end, :); %  x 1 x RR
 
 
 %% RUN CRAB (Dungeness) 🦀 --------------------------
@@ -282,7 +280,7 @@ for t = 1:tmax
 % Next yrs numbers
     ut(:,t+1,:) = pagemtimes(Mu, ut_post) + (RUadd .* sJ^tau);
 
-% Urchin culling (mass mortality events)      
+% Urchin culling (mass mortality events)
     if urchin.culling == "Y"
         if ismember(t, dist_yrs(1) + urchin.culltime + (0:urchin.culllgth-1)) && ismember(rem(t,4), urchin.season)
             % cull all exposed first, then the hiding urchins
@@ -347,35 +345,21 @@ for t = 1:tmax
                 sY = DD + 0.5.*DD2.*muvar;
             end            
   
-    % Total new biomass of juveniles - post predation urchins
-        RKnew = ksetT .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut_post(3,:,:)) .* lambda;
-    % % Total new biomass of juveniles - pre predation urchins
-    %     RKnew = ksetT .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda;
+    % Total new biomass of juveniles
+        RKnew = ksetT .* sY .* rS .* exp(-Func_TypeII(aij(1,2),hij(1,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda;
 
-% Projection/Transition matrix (bull Kelp) - post predation urchins
+% Projection/Transition matrix (bull Kelp)
     Mk = [zeros(1,1,RR),...
           zeros(1,1,RR),...
           zeros(1,1,RR);
 
-          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut_post(3,:,:)) .* lambda,...
-          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut_post(3,:,:)) .* lambda,...
+          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
+          rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
           zeros(1,1,RR);
 
-          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut_post(2,:,:)),...
-          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut_post(2,:,:)),...
-          (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut_post(2,:,:))]; 
-% % Projection/Transition matrix (bull Kelp)- pre predation urchins
-%     Mk = [zeros(1,1,RR),...
-%           zeros(1,1,RR),...
-%           zeros(1,1,RR);
-% 
-%           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
-%           rS .* g .* (1-c) .* exp(-Func_TypeII(aij(2,2),hij(2,2),sum(kt(1:2,t,:))).*ut(3,t+1,:)) .* lambda,...
-%           zeros(1,1,RR);
-% 
-%           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
-%           c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
-%           (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:))];            
+          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+          c .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:)),...
+          (1-d) .* rD .* exp(-Func_TypeII(aij(3,1),hij(3,1),kt(3,t,:)).*ut(2,t+1,:))];            
             
     % if Mk(3,1,:)>1; warning('Drift survival >1'); end
         
@@ -390,3 +374,31 @@ for t = 1:tmax
 end
 
 end
+
+
+% % Vectors for survival of different females and males age classes
+%         sF = nan(1,11,RR); % female survival by age (0–10)
+%         sM = nan(1,11,RR); % male survival by age (0–10)
+% 
+%         % Age 0 (both sexes)
+%             sF(1,1,:) = exp(-MJC);
+%             sM(1,1,:) = exp(-MJC);
+% 
+%         % Females: age 1–10
+%             sF(1,2:11,:) = repmat(exp(-MAC -Func_TypeII(PC,HC,sum(cft(2:end, t, :), 1)).*nt(t,:,:)), [1,10,1]);
+% 
+%         % Males: age 1–3
+%             sM(1,2:4,:) = repmat(exp(-MAC -Func_TypeII(PC,HC,sum(cmt(2:4, t, :), 1)).*nt(t,:,:)), [1,3,1]);
+% 
+%         % Males: age 4–10
+%             sM(1,5:11,:) = repmat(exp(-(MAC + FC(t) + Func_TypeII(PC, HC, sum(cmt(5:end, t, :), 1)) .* nt(t, :, :))), [1,7,1]);
+%             % need to include the transition into the matrix 
+%             % no transition from age 5 to 6, for the fishery take how many age 5 are left. 
+% 
+%     % Projection matrix
+%         Mcf = eye(11).*sF;
+%         Mcm = eye(11).*sM;
+% 
+% % Advance the adult populations
+% cft(:,t+1,:) = pagemtimes(Mcf,cft(:,t,:));
+% cmt(:,t+1,:) = pagemtimes(Mcm,cmt(:,t,:));
