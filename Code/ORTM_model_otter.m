@@ -34,54 +34,49 @@
     tic 
       
 
-%% PREP MODEL (USER CHOOSES) --------------------------
+%% 1) PREP MODEL (USER CHOOSES) --------------------------
 
-% Choose your kelp
-    % options: 'Giant_kelp' | 'Bull_kelp' | 'Bull_kelp_north' | 'Bull_kelp_south'
-    kelp_species = 'Bull_kelp';
+% Choose your kelp    
+    kelp_species = 'Bull_kelp'; % opt: 'Giant_kelp' | 'Bull_kelp' | 'Bull_kelp_north' | 'Bull_kelp_south'
 
 % Choose your urchins
-    % options: 'Urchins_CA' | 'Urchins_OR'
-    urchin_species = 'Urchins_OR';
+    urchin_species = 'Urchins_OR'; % opt: 'Urchins_CA' | 'Urchins_OR'
 
 % Choose your crabs (second prey source)
-    % options: 'Dungeness_OR_Norm' | 'Dungeness_OR_LogNorm'
-    crab_species = 'Dungeness_OR_LogNorm';
+    crab_species = 'Dungeness_OR_LogNorm'; % opt: 'Dungeness_OR_Norm' | 'Dungeness_OR_LogNorm'
 
 % Choose your sea otters
-    % options: 'Table0.csv' | 'Scenario-Norm_SuccesSegment-N3.csv' - Pacific City | 'Scenario-Norm_SuccesSegment-C7.csv' - Newport | 'Scenario-Norm_SuccesSegment-S6.csv' - Port Orford
-    otter_population = 'Scenario-Norm_SuccesSegment-S6.csv';    
+    otter_population = 'Table0.csv'; % opt: 'Table0.csv' | 'Scenario-Norm_SuccesSegment-S6.csv' - Port Orford | 'Scenario-Norm_SuccesSegment-N3.csv' - Pacific City | 'Scenario-Norm_SuccesSegment-C7.csv' - Newport
 
 % Choose your model (this determines which model to run, CA vs OR)
-    % options: 'California_Jess' | 'Oregon_Andres'
-    model = 'Oregon_Andres';
+    model = 'Oregon_Andres'; % opts: 'California_Jess' | 'Oregon_Andres'
 
 
-%% MODEL PARAMETERS --------------------------
+%% 2) MODEL PARAMETERS (Set for "realism") --------------------------
 
 % Run-times/time-steps [winter, spring, summer, autumn]
     T1 = 30*4; % for simulated predator runs
     T2 = 40*4; % for kelp-urchin runs
 
 % Number of replicates (RR) - Max 10000 due to ORSO 
-    RR =  5000;
+    RR =  1000;
 
 % Length of run + buffer
     tmax = T2+100;
 
 % Kelp parameters
     kelp = ParaKelp_Implicit(tmax, kelp_species);
-        kelp.mu = 5*10^-5; % 2.5*10^-9; % 3*10^4; % 2.5*10^4; % 1*10^10; % 9*10^5; % kelp.mu;
 
 % Urchin parameters
     urchin = ParaUrchin_Implicit(tmax, urchin_species);
-        urchin.RU = 5*10^2; % 8*10^2; % 2*10^2; % 1.5*10^5; % urchin.RU;
-        urchin.PE = 0.3650; % 0.3650
-        urchin.HE = 1/0.001;
-
+        urchin.PE = 0.85;
+        urchin.HE = 1/0.001; %1/0.0001;
+        
 % Crab (Dungeness) parameters
     crab = ParaCrab_Implicit(tmax, crab_species);
-        crab.RC = 0; % Potential tuning parameter
+        % crab.RC = 0; % Potential tuning parameter
+        % crab.PC = 0.7; %0.0027; %% MADE UP VALUES
+        % crab.HC = 1/0.0001; %1/5.41e-4;  %% MADE UP VALUES
 
 % Predator simulated (sheep-head, CA_model)
     pred = ParaPred_Implicit(tmax); % NEED REVISSION
@@ -90,40 +85,34 @@
     ORSO_data = fullfile(ORSO, otter_population);
             
     
-%% DISTURBANCE (dist) -------------------------- 
+%% 3) DISTURBANCE (dist) & MANAGEMNET -------------------------- 
     
-% Disturbance length
-    dist.lngth = 0; % 1; % 2; 
+% Disturbance length (How long the disturbance will last)
+    dist.lngth = 0;  
 
-% Disturbance timing 
+% Disturbance timing (When the disturbance will happen)
     if dist.lngth == 0
         dist.yrs = NaN; % no disturbance (default)
     else    
-        dist.yrs = (5*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
+        dist.yrs = (10*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
         % dist.yrs = (20*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
     end 
        
 % How do vital rates change during the disturbance (heatwave) 
 
     % kelp recruitment
-        dist.RK = kelp.RK; 
-        % dist.RK = kelp.RK/7; 
+        dist.RK = kelp.RK; % dist.RK = kelp.RK/7; 
     
     % Kelp biomass growth reduction during disturbance
-        dist.lambda = kelp.lambda;
-        % dist.lambda = kelp.lambda.* repmat([1 1 0.5 0.5],1,tmax/4);   
+        dist.lambda = kelp.lambda; % dist.lambda = kelp.lambda.* repmat([1 1 0.5 0.5],1,tmax/4);   
     
     % urchin grazing increase during disturbance
-        dist.hij = kelp.hij;
-        % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4);
-
-
-%% MANAGEMENT SCENARIOS --------------------------
+        dist.hij = kelp.hij; % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4);
 
 % which management scenario to run over?
-    mngt_scen = '0'; % 'restoration'; % 'culling'; % 'cull&rest'; %  
+    mngt_scen = 'none'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest'; %  
 
-% get vector values
+% Get vector values
     mngt            = ParaMngt_Implicit(mngt_scen);
     pred.fish       = mngt.fish;
     urchin.culling  = mngt.culling;
@@ -132,7 +121,7 @@
     kelp.season     = mngt.season;
 
 
-%% INITIAL CONDITIONS --------------------------
+%% 4) INITIAL CONDITIONS (Set for "realism") --------------------------
 
 % KELP 🌿 [juvenile, adult, drift] 
     if strcmp(kelp_species, 'Giant_kelp')
@@ -145,19 +134,19 @@
     ut0 = [0,0,0]; 
 
 % CRABS 🦀 [age_0, age_1-10] (COMMON DENSITY (base-case; literature-consistent), for low density x*0.5, for high density x*3)
-    % cft0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    % cmt0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    cft0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    cmt0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; %% INITIAL CONDITIONS FOR AGE0 SHOULD BE 0
 
     % FISHED (reflects near-absence of males age 5+)
     % cft0 = [0.287, 6.601, 82.154, 76.045, 41.926, 12.832, 11.130, 7.420, 3.710, 0, 0]; % mass % cft0 = [500, 250, 150, 75, 25, 5, 3, 2, 1, 0, 0]; % number
     % cmt0 = [0.287, 6.601, 82.154, 76.045, 41.926, 0, 0, 0, 0, 0, 0]; % mass % cmt0 = [500, 250, 150, 75, 25, 0, 0, 0, 0, 0, 0]; % number
     
     % UNFISHED (no fishery; older males persist similarly to females) need this to be in Kg
-    cft0 = [0.287, 6.601, 82.154, 76.045, 41.926, 12.832, 11.130, 7.420, 3.710, 0, 0]; % mass % cft0 = [500, 250, 150, 75, 25, 5, 3, 2, 1, 0, 0]; % number
-    cmt0 = [0.287, 6.601, 82.154, 76.045, 41.926, 12.832, 11.130, 7.420, 3.710, 0, 0]; % mass % cmt0 = [500, 250, 150, 75, 25, 5, 3, 2, 1, 0, 0]; % number
+    % cft0 = [0.287, 6.601, 82.154, 76.045, 41.926, 12.832, 11.130, 7.420, 3.710, 0, 0]; % mass % cft0 = [500, 250, 150, 75, 25, 5, 3, 2, 1, 0, 0]; % number
+    % cmt0 = [0.287, 6.601, 82.154, 76.045, 41.926, 12.832, 11.130, 7.420, 3.710, 0, 0]; % mass % cmt0 = [500, 250, 150, 75, 25, 5, 3, 2, 1, 0, 0]; % number
 
 
-%%  PRE-ASSIGN VARIABLES (empty vectors) --------------------------
+%% 5) PRE-ASSIGN VARIABLES (empty vectors) --------------------------
 
 % Degree (deg) lenght - degree is the last mngt in the matrix
     deglngth = structfun(@numel,mngt);
@@ -186,7 +175,7 @@
     end   
     
     
-%% RUN MODELS --------------------------
+%% 6) RUN MODELS --------------------------
 
 % Run managements:
     % run over timing of mngt action
@@ -256,7 +245,7 @@
     end
 
 
-%% MODEL OUTPUTS --------------------------
+%% 7) MODEL OUTPUTS --------------------------
 
 % Outputs
     kts(:,:,h,i,j,:) = kt2;

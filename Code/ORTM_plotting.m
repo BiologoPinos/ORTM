@@ -23,21 +23,32 @@
     find(kelp_avg>0) % persti = find(kelp_avg>0);
     find(kelp_avg==0) % exti = find(kelp_avg==0);
 
-%%
+%% Plot SIMS persistence (Kelp) over time (for multiple reps, single scenario)
 
-% Plot SIMS persistence (Kelp) over time (for multiple reps, single scenario)
-    figure(444)
+    figure(4)
     hold on
-    plot((1:T2+1),sum(kt2(2,:,:)>0,3),'r','LineWidth',1)
-    % xline(dist.yrs,'--r')
-    % xline(dist.yrs(end)+8*4+1,'--k')
-    % xline(dist.yrs(1)+mngt.time+(1:mngt.length),':k')
-    xlabel('Timesteps (seasons)')
-    ylabel('Proportion of simulations with persisting kelp forests')
-    ylim([0,RR])
+    % plot((1:T2+1),sum(kt2(2,:,:)>0,3)./RR,'k','LineWidth',1) % over seasons
+    plot(((0:T2)/4),sum(kt2(2,:,:)>0,3)./RR,'Color','b','LineWidth',2) % over years
+    % plot(((0:T2)/4),sum(kt2(2,:,:)>0,3)./RR,'k','LineWidth',1) % over years
+    
+    % xline(dist.yrs(1),'--','k') % start of disturbance and/or management (seasons)
+    
+    % xline(dist.yrs(1)/4,'--','Start Mng','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',11) % start of disturbance and/or management (years)
+    % xline(mngt.length(end),'--','End Mng','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',11) % start of disturbance and/or management (years)
+
+    % xline(buffer/4,'--','Sea Otter Reintroduction','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',11) % Sea otter reintroduction (years)
+
+    ylabel('Proportion of Kelp Forests Persisting','FontSize',16)
+    % ylim([0,RR])
+    ylim([0,1])
+    
+    % xlabel('Timesteps (seasons)')
+    xlabel('Years','FontSize',16)
+    xlim([0,40])    
 
 
-%% Plot distributions of mean biomass for (across) all replicates
+
+%% Plot distributions of mean biomass for (across) all replicates (where kelp persists)
 
 figure()
     % 1) Kelp 🌿 (juvenile + adult only)
@@ -50,26 +61,14 @@ figure()
         xlabel('Urchin biomass (kg)')
     % 3) Crabs total 🦀 (males + females, all age classes)
         subplot(3,1,3)
-        histogram(mean(sum(cfts(:,(end-80):end,1,1,kelp_avg>0)) + ...
-                       sum(cmts(:,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
-        xlabel('Total crab biomass (kg)')
+        histogram(mean(sum(cfts(2:11,(end-80):end,1,1,kelp_avg>0)) + ...
+                       sum(cmts(2:11,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
+        xlabel('Crab biomass (kg)')
 
-% figure % (crabs females & males separated)
-%     % 1) Crab females 🦀♀ (all age classes)
-%         subplot(2,1,1)
-%         histogram(mean(sum(cfts(:,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
-%         xlabel('Female crab biomass (kg)')
-% 
-%     % 2) Crab males 🦀♂ (all age classes)
-%         subplot(2,1,2)
-%         histogram(mean(sum(cmts(:,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
-%         xlabel('Male crab biomass (kg)')
+
 
 
 %% Plot kelp biomass vs urchin biomass
-
-% edit this, only sample summer timestep, becuase comparable pisco data for
-% kelp is only of summer (august)
 
 % sample over 10 yrs (after 10 years)
 kts_all = reshape(mean(sum(kts(1:2,41:80,1,1,:)),2),1,[])*0.006;
@@ -86,48 +85,24 @@ xlabel('Urchin biomass (kg.60m^2)')
 ylabel('Kelp biomass (kg.60m^2)')
 
 
-% % sample over last 20 yrs, only summer (season 3)
-% summer_idx = 120:3:180; % summer seasons in the last 20 years
-% kts_all = reshape(mean(kts(1:2, summer_idx, 1, 1, :), 2), 1, []) * 0.006;
-% uts_all = reshape(mean(uts(2:3, summer_idx, 1, 1, :), 2), 1, []) * 0.006;
-% % plot
-% figure
-% hold on
-% scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha', .2, 'MarkerEdgeAlpha', .2)
-% % limits
-% xlim([0 150])
-% ylim([0 500])
-% % axis
-% xlabel('Urchin biomass (kg.60m^2)')
-% ylabel('Kelp biomass (kg.60m^2)')
-
 
 %% Single replicate run: urchin-kelp figure and outputs
 
 % Which replicate? 
-R = 2;
-
-% Summary stats over last 20 years (~80 seasons)
-Kelp = [max(sum(kts(1:2,(end-80):end,1,1,R))), min(sum(kts(1:2,(end-80):end,1,1,R))), mean(sum(kts(1:2,(end-80):end,1,1,R)))];
-Drift = [max(kts(3,(end-80):end,1,1,R)), min(kts(3,(end-80):end,1,1,R)), mean(kts(3,(end-80):end,1,1,R))];
-Urchins = [max(sum(uts(2:3,(end-80):end,1,1,R))), min(sum(uts(2:3,(end-80):end,1,1,R))), mean(sum(uts(2:3,(end-80):end,1,1,R)))];
-
-% Summary per transect
-Kelp_transect = Kelp*0.006;
-Drift_transect = Drift*0.006;
-Urchins_transect = Urchins*0.006;
+R = 9973;
 
 % Plot dynamics
-figure
+figure()
 
 % Kelp
 subplot(2,1,1)
 hold on
 plot(repmat((1:(T2+1))'./4,1,3), kts(:,:,1,R)')
-yline(8.3e4,'--k')                  % reference line
+% yline(8.3e4,'--k')                  % reference line
 xline(dist.yrs./4,'--r')           % disturbance timing
-grid minor
-xlim([10,(T2+1)/4])
+% grid minor
+xlim([5,(T2+1)/4])
+ylim([0 12*10^4])
 ylabel('Kelp density (kg/ha)')
 legend('Juvenile','Adult','Drift')
 
@@ -136,59 +111,123 @@ subplot(2,1,2)
 hold on
 plot(repmat((1:(T2+1))'./4,1,2), uts(2:3,:,1,R)')
 xline(dist.yrs./4,'--r')
-grid minor
-xlim([10,(T2+1)/4])
+% grid minor
+xlim([5,(T2+1)/4])
+ylim([0 10000])
 legend('Hiding adults','Exposed adults')
 ylabel('Urchin density (kg/ha)')
-xlabel('Time (seasons)')
+xlabel('Years')
 
-% Add annotation
-% text(0.01,0.3,...
-%     "Kelp: RK = " + kelp.RK + ", mu = " + kelp.mu + ", rS = " + kelp.rS + ", g = " + kelp.g + ", c = " + kelp.c + ", d = " + kelp.d + newline +...
-%     "Urchins: RU = " + urchin.RU + ", MJ = " + urchin.MJ + ", MH = " + urchin.MH + ", ME = " + urchin.ME + newline +...
-%     "Switching: w1 = " + urchin.w1 + ", w2 = " + urchin.w2 + ", kmin = " + urchin.kmin + newline +...
-%     "Initial: kt = [" + num2str(kts(:,1,1,1,R)') + "], ut = [" + num2str(uts(:,1,1,1,R)') + "]" + newline +...
-%     "Final avg: Kelp = " + Kelp(3) + ", Drift = " + Drift(3) + ", Urchins (adults) = " + Urchins(3) + newline +...
-%     "Scenario: Disturbance = " + (~isnan(dist.yrs(1))) + ", Fishing F = " + pred.F + ", Culling = " + urchin.culling + ", Restoration = " + kelp.restore)
 
-%% Single replicate run: urchin-kelp-crab figure and outputs
 
-% R = 2;
-% 
-% % Crabs
-% CrabF_total = sum(cfts(:,:,1,R),1); % females summed over age
-% CrabM_total = sum(cmts(:,:,1,R),1); % males summed over age
-% Crab_total = CrabF_total + CrabM_total;
-% 
-% % Plot dynamics
-% figure
-% 
-% % 3) Crabs total
-% subplot(3,1,1)
-% hold on
-% plot((1:(T2+1))'./4, Crab_total')
-% xline(dist.yrs./4,'--r')
-% grid minor
-% xlim([10,(T2+1)/4])
-% ylabel('Crabs total (kg/ha)')
-% 
-% % 4) Crabs females by age
-% subplot(3,1,2)
-% hold on
-% plot(repmat((1:(T2+1))'./4,1,5), CrabF_total')
-% xline(dist.yrs./4,'--r')
-% grid minor
-% xlim([10,(T2+1)/4])
-% ylabel('Crabs F (age)')
-% legend(arrayfun(@(x) sprintf('F%d',x-1), 1:5, 'UniformOutput', false))
-% 
-% % 5) Crabs males by age
-% subplot(3,1,3)
-% hold on
-% plot(repmat((1:(T2+1))'./4,1,5), CrabM_total')
-% xline(dist.yrs./4,'--r')
-% grid minor
-% xlim([10,(T2+1)/4])
-% ylabel('Crabs M (age)')
-% xlabel('Time (seasons)')
-% legend(arrayfun(@(x) sprintf('M%d',x-1), 1:5, 'UniformOutput', false))
+%% Crab biomass distribution across replicates
+
+% --- sample only winter seasons and bound results to 0 ---
+T = size(uts,2);
+winterIdx = 2:4:T;                      % winters
+x = (winterIdx-1)/4;                    % years corresponding to winter seasons
+
+% Prepare full matrices then subset to winter rows
+C = reshape(squeeze(sum(cmts(4,:,:,:,:,:),1)), T, []);  % T x Nsim (crabs; use 5:11 for age 4+)
+
+C = C(winterIdx,:);    % only winters
+
+% Bound to zero
+C(C < 0) = 0;
+
+% --- Figure 1: mean + ribbon (2 rows x 1 col) ---
+figure(1111111)
+
+% Crabs (winter only)
+hold on
+m = mean(C,2,'omitnan'); s = std(C,0,2,'omitnan');
+upper = m + s;
+lower = max(m - s, 0);                     % ensure lower bound >= 0
+patch([x fliplr(x)], [upper.' fliplr(lower.')], [0.8 1 0.8], 'EdgeColor','none', 'FaceAlpha',0.35);
+plot(x, m, 'k-', 'LineWidth', 1.5);
+xlabel('Years'); 
+xlim([5 49]);
+xline(buffer/4,'--') % Sea otter reintroduction (years)
+ylabel('Pre-fishery male Dungeness crab male biomass distribution (Kg/ha)');
+
+
+
+%% Crab biomass for each age class by sex across replicates
+
+figure()
+
+meanF = squeeze(mean(mean(cft2(:, 80:end, :), 2), 3));  % females
+meanM = squeeze(mean(mean(cmt2(:, 80:end, :), 2), 3));  % males
+
+stdF = squeeze(std(mean(cft2(:, 80:end, :), 2), 0, 3));
+stdM = squeeze(std(mean(cmt2(:, 80:end, :), 2), 0, 3));
+
+
+bar_data = [meanF(:) meanM(:)];
+b = bar(1:11, bar_data, 'grouped');
+b(1).FaceColor = [0.85 0.2 0.2]; % red for females
+b(2).FaceColor = [0.2 0.4 0.85]; % blue for males
+hold on
+
+% Add error bars
+ngroups = size(bar_data, 1);
+nbars = size(bar_data, 2);
+groupwidth = min(0.8, nbars/(nbars + 1.5));
+for i = 1:nbars
+    x = (1:ngroups) - groupwidth/2 + (2*i-1) * groupwidth / (2*nbars);
+    if i == 1
+        errorbar(x, meanF, stdF, 'k.', 'LineWidth', 1)
+    else
+        errorbar(x, meanM, stdM, 'k.', 'LineWidth', 1)
+    end
+end
+hold off
+
+xlabel('Crab Age Class')
+ylabel('Biomass (Kg/ha)')
+title('Mean Biomass per Age Class (Last 80 Time Steps) - With Sea otters')
+legend({'Females','Males'}, 'Location','best')
+box on
+
+
+
+%% Urchin and crab biomass distribution across replicates
+
+% --- sample only winter seasons and bound results to 0 ---
+T = size(uts,2);
+winterIdx = 2:4:T;                      % winters
+x = (winterIdx-1)/4;                    % years corresponding to winter seasons
+
+% Prepare full matrices then subset to winter rows
+U = reshape(squeeze(sum(uts(2:3,:,:,:,:,:),1)), T, []);    % T x Nsim (adult urchins)
+C = reshape(squeeze(sum(cmts(4,:,:,:,:,:),1)), T, []);  % T x Nsim (crabs; use 5:11 for age 4+)
+
+U = U(winterIdx,:);    % only winters
+C = C(winterIdx,:);    % only winters
+
+% Bound to zero
+U(U < 0) = 0;
+C(C < 0) = 0;
+
+% --- Figure 1: mean + ribbon (2 rows x 1 col) ---
+figure()
+
+% Urchins (winter only)
+subplot(2,1,1); hold on
+m = mean(U, 2,'omitnan'); s = std(U,0,2,'omitnan');
+upper = m + s;
+lower = max(m - s, 0);                     % ensure lower bound >= 0
+patch([x fliplr(x)], [upper.' fliplr(lower.')], [0.8 0.8 1], 'EdgeColor','none', 'FaceAlpha',0.35);
+plot(x, m, 'r-', 'LineWidth', 1.5);
+xlabel('Years'); ylabel('Adult urchin biomass');
+title('Winter: adult urchin biomass \pm 1 SD'); hold off
+
+% Crabs (winter only)
+subplot(2,1,2); hold on
+m = mean(C,2,'omitnan'); s = std(C,0,2,'omitnan');
+upper = m + s;
+lower = max(m - s, 0);                     % ensure lower bound >= 0
+patch([x fliplr(x)], [upper.' fliplr(lower.')], [0.8 1 0.8], 'EdgeColor','none', 'FaceAlpha',0.35);
+plot(x, m, 'r-', 'LineWidth', 1.5);
+xlabel('Years'); ylabel('Male Dungeness biomass (age 4+)');
+title('Winter: male Dungeness biomass \pm 1 SD'); 

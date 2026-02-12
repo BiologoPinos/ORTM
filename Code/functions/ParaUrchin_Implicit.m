@@ -13,7 +13,7 @@ function urchin = ParaUrchin_Implicit(tmax, species)
 % Recruitment (mean-successful settlers):
 
     % Larval production, dispersal and settlement (assumes open population)
-        RU = [3*10^5; 2*10^2]; % (Tuning parameter)
+        RU = [3*10^5; 5*10^2]; % (Tuning parameter) %2*10^2
     
     % Temporal (norm) standard deviation (noise) of recruits
         RUstdv = [0.621; 1.26]; % 0;
@@ -42,12 +42,16 @@ function urchin = ParaUrchin_Implicit(tmax, species)
             alphavar = [5751518; 505]; % NOT BEING USED IN OR VERSION
 
     % Predation (attack) instantaneous mortality rate of urchins (relevant for type II)
-        PE = [0.0065; 0.3650]; % exposed  (lower = less mortality)
+        PE = [0.0065; 0.3650]; % exposed (lower = less mortality)
+            % 0.3650 -> Burt et al., 2018
+            % 0.0027 -> 27.38*0.21/23.02/91
         PH = PE.*0.5; % hiding  (lower = less mortality) % [PE(1)*0.5; PE(2)*0.5]; % 0;
 
     % Handling time or max prey consumed "h = 1/handling time" (relevant for type II)
-        HE = [1/0.001; 1/0.001]; % exposed (1/0.001 = 10^3)
-        HH = HE.*0.5; % hiding % [HE(1)*0.5; HE(2)*0.5]; % 0;
+        HE = [1/0.001; 1/0.001]; % exposed
+            % 1/0.001
+            % 1/1.25e-4 -> 30*0.21/23.02/24/91 
+        HH = HE.*0.5; % hiding
 
     % Fishing mortality rate (we are assuming no urchin fishery)
         FU = [0; 0]; %
@@ -66,7 +70,7 @@ function urchin = ParaUrchin_Implicit(tmax, species)
 % Minimum standing kelp (juvs + adults) biomass density threshold in which a barren state is declared:
 
     % Turns predation and fishing of exposed on/off
-        kmin = [1170; 408.33]; % 0; 
+        kmin = [1170; 408.33]; %  408.33 % 0; 
         % 0 = events never off (predation on)
         % large number = events always off (predation off)
 

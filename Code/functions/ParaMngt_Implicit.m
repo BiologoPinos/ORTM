@@ -22,10 +22,10 @@ if contains(scenario,{'cull', 'rest'})
     % relative to start of disturbance or realtive to the start of the model when no disturbance is happening
     % in terms of seasons (timesteps)
     % before = -x, during = 0, after = x-1 (yr)
-    mngt.time =  4; % [-4,0,4]; %  -8:4:20; %         
+    mngt.time =  0; % [-4,0,4]; %  -8:4:20; %         
 
     % length of mngt action (timesteps)
-    mngt.length = 40; %  0:4:20; %    [0,4,12,20]; %   
+    mngt.length = 5*4; %  0:4:20; %    [0,4,12,20]; %   
 
 
 end
@@ -52,14 +52,14 @@ if contains(scenario,'rest')
     % Kelp restoration  
     % what seasons does mngt happen in?
     % 1 = winter, 2 = spring, 3 = summer, 4 = fall
-    mngt.season = 3; % 2:3; %
+    mngt.season = 2:3; % 2:3; %
 
     % = reseeding juveniles into the population
     mngt.restore = "Y"; 
 
 
-  % proportion of biomass of recruits added per season (kg.ha)
-    mngt.degreeR =  1*6.21*10^6; %  [0,0.01,0.05,0.1,0.25,0.5,0.75,1]; %   
+    % proportion of biomass of recruits added per season (kg.ha)
+    mngt.degreeR =  1*(5.7735e+04 * 0.1); %(4.1791e+03 * 0.01); %6.21*10^5; % (4.1791e+03 * 0.01); % 0.01(or other %)*adult kelp biomass  
 
 end
 
