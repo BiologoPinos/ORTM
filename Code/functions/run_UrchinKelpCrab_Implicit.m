@@ -322,25 +322,17 @@ for t = 1:tmax
         % type II predation (e.g. sea otters)
             % hiding adults 
             sH = exp(-MHU); % exp(-MHU -FU -Func_TypeII(aH,bH,sum(ut(2:3,t,:))).*nt(t,:,:));
-            % sH = exp(-MHU - FU); % exp(-MHU -FU -Func_TypeII(aH,bH,sum(ut(2:3,t,:))).*nt(t,:,:));
 
             % exposed adults
             sE = exp(-MEU); % exp(-MEU -Psi .* (FU + Func_TypeII(aE,bE,sum(ut(2:3,t,:))).*nt(t,:,:)));
-            % sE = exp(-MEU - Psi .* FU); % exp(-MEU -Psi .* (FU + Func_TypeII(aE,bE,sum(ut(2:3,t,:))).*nt(t,:,:)));
 
 % Proportion being exposed
 
     % Grazing capacity (ratio of drift kelp to total urchin feeding rate) - using post predation adults 
-    GC(t,1,:) = max(kt(3,t,:)./(sum(ut_post(2:3,:,:)).*hij(3,1)),0);     % use max so that NaN (no drift state) becomes 0
+    GC(t,1,:) = max(kt(3,t,:)./(sum(ut_post(2:3,:,:)).*hij(3,1)),0); % GC(t,1,:) = max(kt(3,t,:)./(sum(ut(2:3,t,:)).*hij(3,1)),0); % pre-predation urchins
 
-    % Phi = Func_Switch(w1, w2, kt(3,t));
-    Phi = reshape(Func_Switch(w1, w2, squeeze(GC(t,1,:))),1,1,RR);
-
-    % % Grazing capacity (ratio of drift kelp to total urchin feeding rate) - using pre predation adults 
-    % GC(t,1,:) = max(kt(3,t,:)./(sum(ut(2:3,t,:)).*hij(3,1)),0);     % use max so that NaN (no drift state) becomes 0
-    % 
-    % % Phi = Func_Switch(w1, w2, kt(3,t));
-    % Phi = reshape(Func_Switch(w1, w2, squeeze(GC(t,1,:))),1,1,RR);
+    % Grazing behavior switching
+    Phi = reshape(Func_Switch(w1, w2, squeeze(GC(t,1,:))),1,1,RR); % Phi = reshape(Func_Switch(w1, w2, squeeze(GC(t,1,:))),1,1,RR); % pre-predation urchins
 
 % Projection/Transition matrix
     Mu = [repmat((1-gJ) * sJ,1,1,RR),  zeros(1,1,RR),   zeros(1,1,RR);
