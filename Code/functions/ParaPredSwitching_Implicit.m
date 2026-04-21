@@ -1,1 +1,0 @@
-function switching = ParaPredSwitching_Implicit(tmax)

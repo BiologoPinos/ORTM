@@ -26,7 +26,7 @@ function pred_forced = ParaPred_Forced(ORSO_data,RR)
     n_years = size(replicate_data, 1);
 
 % biomass per individual (kg) with normal variation
-    biomass = 23.02 + 4.38 .* randn(n_years, RR);  % normal distribution (mean ± SD)
+    biomass = 36 + 4.38 .* randn(n_years, RR);  % normal distribution (mean ± SD)
 
 % ensure no negative biomass values (truncate if needed)
     biomass(biomass < 0) = 0;

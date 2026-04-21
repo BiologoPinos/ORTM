@@ -1,4 +1,4 @@
-function [kt,ut,GC,cft,cmt,RK_noise] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, tmax, RR, kt1, ut1, cft1, cmt1, nt, dist)
+function [kt,ut,GC,cft,cmt,RK_noise,otterFR,prey_consumed] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, tmax, RR, kt1, ut1, cft1, cmt1, xt1, nt, dist)
 
 % Description:
     % function running single populations kelp <> urchins model
@@ -13,8 +13,8 @@ function [kt,ut,GC,cft,cmt,RK_noise] = run_UrchinKelpCrab_Implicit(kelp, urchin,
 
 % Kelp 🌿
 RKstdv      = kelp.RKstdv;
-mu          = kelp.mu;
-ddD         = kelp.ddD;
+RKbeta      = kelp.RKbeta;
+D           = kelp.D;
 muvar       = kelp.muvar;
 RTk         = kelp.RTk;
 reproWeight = kelp.reproWeight;  
@@ -36,14 +36,14 @@ RUdist      = urchin.RUdist;
 RTU         = urchin.RTU;
 gJ          = urchin.gJ;
 MJU         = urchin.MJU;
-alpha       = urchin.alpha;
-alphavar    = urchin.alphavar;
 MHU         = urchin.MHU;
 MEU         = urchin.MEU;
-PH          = urchin.PH;
-PE          = urchin.PE;
-HH          = urchin.HH;
-HE          = urchin.HE;
+aH          = urchin.aH;
+aE          = urchin.aE;
+bH          = urchin.bH;
+bE          = urchin.bE;
+wu          = urchin.wu;
+phi         = urchin.phi;
 FU          = urchin.FU;
 PLD         = urchin.PLD;
 tau         = urchin.tau;
@@ -61,12 +61,14 @@ MRC         = crab.MRC;
 MJC         = crab.MJC;
 MAC         = crab.MAC;
 FC          = crab.FC;
-PC          = crab.PC;
-HC          = crab.HC;
+aC          = crab.aC;
+bC          = crab.bC;
+wc          = crab.wc;
 NCIF        = crab.NCIF{1};
 
 % Other parameters
 dist_yrs = dist.yrs;
+
 
 
 %% VECTORS FOR STATE VARIABLES --------------------------
@@ -74,6 +76,12 @@ dist_yrs = dist.yrs;
 % Predator
     nt = reshape(nt,[],1,RR);
     % nt = nt([],1,RR);
+
+% Feeding rate
+    otterFR = NaN(4, tmax, RR);
+
+% Prey consumed
+    prey_consumed = NaN(4, tmax, RR);
 
 % Kelp
     kt = NaN(3,tmax,RR);
@@ -87,17 +95,15 @@ dist_yrs = dist.yrs;
     GC = NaN(tmax,1,RR);
 
 % Dungeness crab females
-    % cft = NaN(44,tmax,RR);
-    cft = NaN(11,tmax,RR);
+    cft = NaN(44,tmax,RR);
     cft(:,1,:) = repmat(cft1(:),1,1,RR);
 
 % Dungeness crab males
-    % cmt = NaN(44,tmax,RR);
-    cmt = NaN(11,tmax,RR);
+    cmt = NaN(44,tmax,RR);
     cmt(:,1,:) = repmat(cmt1(:),1,1,RR);
 
 % Switching function (urchins), set Psi to 1
-    Psi = 1; % this will be the psi func, this has to be inside the loop to account for the daily abundances
+    Psi = 1;
 
 
 %% VECTORS FOR RECRUITMENT (set noise vectors for recruits) --------------------------
@@ -150,49 +156,98 @@ for t = 1:tmax
             ut_d(:,1,:) = ut(:,t,:);
         
             % Dungeness crab females
-            % cft_d = NaN(44, ndays+1, RR);
-            cft_d = NaN(11, ndays+1, RR);
+            cft_d = NaN(44, ndays+1, RR);
             cft_d(:,1,:) = cft(:,t,:);
         
             % Dungeness crab males
-            % cmt_d = NaN(44, ndays+1, RR);
-            cmt_d = NaN(11, ndays+1, RR);
-            cmt_d(:,1,:) = cmt(:,t,:);   
-    
+            cmt_d = NaN(44, ndays+1, RR);
+            cmt_d(:,1,:) = cmt(:,t,:);
+           
             % Predator (same number)
             nt_season = reshape(nt(t,:,:), 1, 1, RR); %% CHEKC THIS
 
+            % Prey vectors (S, A, X)
+            S = NaN(1, ndays+1, RR);
+            A = NaN(1, ndays+1, RR);
+            X = NaN(1, ndays+1, RR);
+
+            % Preference vectors
+            p1 = NaN(1, ndays+1, RR);       
+            p2 = NaN(1, ndays+1, RR);
+
+            % Feeding rate vectors
+            feed_rate_uh = NaN(1, ndays+1, RR);
+            feed_rate_ue = NaN(1, ndays+1, RR);
+            feed_rate_cf = NaN(1, ndays+1, RR);
+            feed_rate_cm = NaN(1, ndays+1, RR);
+ 
         % Run daily predation loop
         
             for tt = 1:ndays
+
+                % Yodzis preference/switching        
+
+                    % Compute available biomasses per replicate (shape 1 x 1 x RR)
+                    S(:,tt,:) = sum(ut_d(2:3, tt, :), 1);   % 1 x 1 x RR -> urchin available biomass
+                    A(:,tt,:) = sum(cft_d(9:end, tt, :) + cmt_d(9:end, tt, :), 1); % adult crab available biomass
+                    X(:,tt,:) = xt1;
+
+                    % Predator presence mask
+                    hasPred = (nt_season > 0); % 1 x 1 x RR
+    
+                    % Compute switching fractions
+                    % p1(:,tt,:) = 1;   % shape 1x1xRR + smallEPS
+                    % p2(:,tt,:) = 1;   % shape 1x1xRR + smallEPS
+                    p1(:,tt,:) = wu .* (S(:,tt,:) .^ phi) ./ (wu .* (S(:,tt,:) .^ phi) + wc .* (A(:,tt,:) .^ phi) + (1-wu-wc) .* (X(:,tt,:) .^ phi));   % shape 1x1xRR + smallEPS
+                    p2(:,tt,:) = wc .* (A(:,tt,:) .^ phi) ./ (wu .* (S(:,tt,:) .^ phi) + wc .* (A(:,tt,:) .^ phi) + (1-wu-wc) .* (X(:,tt,:) .^ phi));   % shape 1x1xRR + smallEPS
+                   
+                    % No predators → no switching 
+                    p1(:,tt,~hasPred) = 0; 
+                    p2(:,tt,~hasPred) = 0;
+
+                % Feeding rates
+                    
+                    % Urchins
+                    feed_rate_uh(:,tt,:) = exp(p1(:,tt,:) .* (-Func_TypeII(aH, bH, S(:,tt,:)) .* nt_season(:,:,:))); % hiding
+                    feed_rate_ue(:,tt,:) = exp(p1(:,tt,:) .* (Psi.* -Func_TypeII(aE, bE, S(:,tt,:)) .* nt_season(:,:,:))); % exposed
+
+                    % Crabs
+                    feed_rate_cf(:,tt,:) = exp(p2(:,tt,:) .*(-Func_TypeII(aC, bC, A(:,tt,:)) .* nt_season(:,:,:))); % females
+                    feed_rate_cm(:,tt,:) = exp(p2(:,tt,:) .*(-Func_TypeII(aC, bC, A(:,tt,:)) .* nt_season(:,:,:))); % males
+
+                % Daily predation 
                 
-                % Daily predation on urchins (juveniles unaffected by predation)
-                ut_d(1,tt+1,:) = ut_d(1,tt,:);
-                
-                % ut_d(2,tt+1,:) = ut_d(2,tt,:) .* exp(Psiu.*-Func_TypeII(PH, HH, sum(ut_d(2:3,tt,:))) .* nt_season(:,:,:)); % hiding
-                
-                ut_d(2,tt+1,:) = ut_d(2,tt,:) .* exp(-Func_TypeII(PH, HH, sum(ut_d(2:3,tt,:))) .* nt_season(:,:,:)); % hiding
-                ut_d(3,tt+1,:) = ut_d(3,tt,:) .* exp(Psi.* -Func_TypeII(PE, HE, sum(ut_d(2:3,tt,:))) .* nt_season(:,:,:)); % exposed
+                    % Urchins (juveniles unaffected by predation)
+                    ut_d(1,tt+1,:) = ut_d(1,tt,:);
+                    ut_d(2,tt+1,:) = ut_d(2,tt,:) .* feed_rate_uh(:,tt,:); % hiding
+                    ut_d(3,tt+1,:) = ut_d(3,tt,:) .* feed_rate_ue(:,tt,:); % exposed
         
-                % Daily predation on female crabs (age 0-1 unaffected by predation)
-                cft_d(1:8,tt+1,:) = cft_d(1:8,tt,:);
-                % cft_d(1:2,tt+1,:) = cft_d(1:2,tt,:);
-                cft_d(9:end,tt+1,:) = cft_d(9:end,tt,:) .* exp(-Func_TypeII(PC, HC, sum(cft_d(9:end,tt,:) + cmt_d(9:end,tt,:))) .* nt_season(:,:,:));
-                % cft_d(3:end,tt+1,:) = cft_d(3:end,tt,:) .* exp(-Func_TypeII(PC, HC, sum(cft_d(3:end,tt,:) + cmt_d(3:end,tt,:))) .* nt_season(:,:,:));
-        
-                % Daily predation on male crabs (age 0-1 unaffected by predation)
-                cmt_d(1:8,tt+1,:) = cmt_d(1:8,tt,:);
-                % cmt_d(1:2,tt+1,:) = cmt_d(1:2,tt,:);
-                cmt_d(9:end,tt+1,:) = cmt_d(9:end,tt,:) .* exp(-Func_TypeII(PC, HC, sum(cmt_d(9:end,tt,:) + cft_d(9:end,tt,:))) .* nt_season(:,:,:));
-                % cmt_d(3:end,tt+1,:) = cmt_d(3:end,tt,:) .* exp(-Func_TypeII(PC, HC, sum(cmt_d(3:end,tt,:) + cft_d(3:end,tt,:))) .* nt_season(:,:,:));
-                
-        
+                    % Female crabs (age 0-1 unaffected by predation)
+                    cft_d(1:8,tt+1,:) = cft_d(1:8,tt,:);
+                    cft_d(9:end,tt+1,:) = cft_d(9:end,tt,:) .* feed_rate_cf(:,tt,:); % female
+            
+                    % Daily predation on male crabs (age 0-1 unaffected by predation)
+                    cmt_d(1:8,tt+1,:) = cmt_d(1:8,tt,:);
+                    cmt_d(9:end,tt+1,:) = cmt_d(9:end,tt,:) .* feed_rate_cm(:,tt,:); % male
+
             end % end daily loop
     
         % Extract post-predation (end-of-season) biomasses
-        ut_post = ut_d(:, end, :);   % 3 x 1 x RR
-        cft_post = cft_d(:, end, :); % 44 x 1 x RR
-        cmt_post = cmt_d(:, end, :); % 44 x 1 x RR
+        ut_post     = ut_d(:, end, :);   % 3 x 1 x RR
+        cft_post    = cft_d(:, end, :); % 44 x 1 x RR
+        cmt_post    = cmt_d(:, end, :); % 44 x 1 x RR
+
+        % Extract the realized sea otter feeding rates
+        otterFR(1,t,:) = 1 - mean(feed_rate_uh(:,1:ndays,:), 2);   % urchin hiding
+        otterFR(2,t,:) = 1 - mean(feed_rate_ue(:,1:ndays,:), 2);   % urchin exposed
+        otterFR(3,t,:) = 1 - mean(feed_rate_cf(:,1:ndays,:), 2);   % female crab
+        otterFR(4,t,:) = 1 - mean(feed_rate_cm(:,1:ndays,:), 2);   % male crab
+
+        % Realized prey consumed during the season
+        prey_consumed(1,t,:) = max(squeeze(ut_d(2,1,:) - ut_d(2,end,:)), 0);                 % hiding urchins
+        prey_consumed(2,t,:) = max(squeeze(ut_d(3,1,:) - ut_d(3,end,:)), 0);                 % exposed urchins
+        prey_consumed(3,t,:) = max(squeeze(sum(cft_d(9:end,1,:),1) - sum(cft_d(9:end,end,:),1)), 0);  % female crabs
+        prey_consumed(4,t,:) = max(squeeze(sum(cmt_d(9:end,1,:),1) - sum(cmt_d(9:end,end,:),1)), 0);  % male crabs
 
 
 %% RUN CRAB (Dungeness) 🦀 --------------------------
@@ -200,36 +255,40 @@ for t = 1:tmax
 % Survival
 
     % Females 
-       Sf = cat(1, repmat(exp(-MRC),1,1,RR), repmat(exp(-MJC),1,1,RR), repmat(exp(-MAC), 11-3,1,RR));
-    
+       Sf = cat(1, repmat(exp(-MRC),3,1,RR), repmat(exp(-MJC),4,1,RR), repmat(exp(-MAC), 36,1,RR));
+
     % Males
-       Sm = cat(1, repmat(exp(-MRC),1,1,RR), repmat(exp(-MJC),1,1,RR), repmat(exp(-MAC), 2,1,RR), repmat(exp(-MAC - FC(t)), 11-5,1,RR));
+       Sm = cat(1, repmat(exp(-MRC),3,1,RR), repmat(exp(-MJC),4,1,RR), repmat(exp(-MAC), 8,1,RR), repmat(exp(-MAC - FC(t)), 28,1,RR));
 
 % Projection/Transition matrix
     
     % Females
-        Mcf = zeros(11, 11, RR);
-        Mcf(2:11, 1:11-1, :) = reshape(eye(11-1), 11-1, 11-1, 1) .* reshape(squeeze(Sf(:,1,:)), 11-1, 1, RR); 
-            % 10x10xRR stored in the sub-diagonal of an 11x11xRR
-
+       Mcf = zeros(44, 44, RR);
+       Mcf(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sf(:,1,:)), 44-1, 1, RR); % 43x43xRR stored in the sub-diagonal of 44x44xRR
+    
     % Males
-        Mcm = zeros(11, 11, RR);
-        Mcm(2:11, 1:11-1, :) = reshape(eye(11-1), 11-1, 11-1, 1) .* reshape(squeeze(Sm(:,1,:)), 11-1, 1, RR); 
-            % 10x10xRR stored in the sub-diagonal of an 11x11xRR
+       Mcm = zeros(44, 44, RR);
+       Mcm(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sm(:,1,:)), 44-1, 1, RR);  % 43x43xRR stored in the sub-diagonal of an 44x44xRR
 
 % Recruitment
 
     % Incoming recruits with timing + noise
-        RCnew = zeros(11,1,RR);
+        RCnew = zeros(44,1,RR);
         RCnew(1,1,:) = RC .* RTC(t) .* RC_noise(t,:,:);
     
     % Cannibalism (Ricker Style)
-        RCnew(1,1,:) = RCnew(1,1,:) .* exp(-beta .* (sum(NCIF .* (cft_post(2:11,:,:) + cmt_post(2:11,:,:)))));
+        RCnew(1,1,:) = RCnew(1,1,:) .* exp(-beta .* (sum(NCIF .* (cft_post(5:44,:,:) + cmt_post(5:44,:,:)))));
 
 % Advance the adult populations
     cft(:,t+1,:) = pagemtimes(Mcf, cft_post) + (RCnew .* 0.5); % females
     cmt(:,t+1,:) = pagemtimes(Mcm, cmt_post) + (RCnew .* 0.5); % males 
-    cmt(6:11, t+1, :) = 0; % Fishery: remove all males age ≥5 (set to zero)
+
+    % Fishery: remove all males age ≥6 (index 25)
+    cmt(25:end, t+1, :) = 0;
+
+    % Removal of all elderly (Fall age 10, index 44) crabs (absolute natural mortality)
+    cft(44, t+1, :) = 0;
+    cmt(44, t+1, :) = 0;
 
 
 
@@ -256,18 +315,18 @@ for t = 1:tmax
     % Adults (Hiding and Exposed):
         % type I linear predation (e.g. sheep head)
             % hiding adults 
-            % sH = exp(-MH -PH.*nt(t,:,:) - FU);
+            % sH = exp(-MH -aH.*nt(t,:,:) - FU);
             % exposed adults
-            % sE = exp(-ME -Psi.*(PE.*nt(t,:,:) + FU));
+            % sE = exp(-ME -Psi.*(aE.*nt(t,:,:) + FU));
     
         % type II predation (e.g. sea otters)
             % hiding adults 
-            sH = exp(-MHU); % exp(-MHU -FU -Func_TypeII(PH,HH,sum(ut(2:3,t,:))).*nt(t,:,:));
-            % sH = exp(-MHU - FU); % exp(-MHU -FU -Func_TypeII(PH,HH,sum(ut(2:3,t,:))).*nt(t,:,:));
+            sH = exp(-MHU); % exp(-MHU -FU -Func_TypeII(aH,bH,sum(ut(2:3,t,:))).*nt(t,:,:));
+            % sH = exp(-MHU - FU); % exp(-MHU -FU -Func_TypeII(aH,bH,sum(ut(2:3,t,:))).*nt(t,:,:));
 
             % exposed adults
-            sE = exp(-MEU); % exp(-MEU -Psi .* (FU + Func_TypeII(PE,HE,sum(ut(2:3,t,:))).*nt(t,:,:)));
-            % sE = exp(-MEU - Psi .* FU); % exp(-MEU -Psi .* (FU + Func_TypeII(PE,HE,sum(ut(2:3,t,:))).*nt(t,:,:)));
+            sE = exp(-MEU); % exp(-MEU -Psi .* (FU + Func_TypeII(aE,bE,sum(ut(2:3,t,:))).*nt(t,:,:)));
+            % sE = exp(-MEU - Psi .* FU); % exp(-MEU -Psi .* (FU + Func_TypeII(aE,bE,sum(ut(2:3,t,:))).*nt(t,:,:)));
 
 % Proportion being exposed
 
@@ -341,14 +400,14 @@ for t = 1:tmax
         % DD functions
 
             % for Beverton-Holt DD function (note this basic form assumes that the slope at the orgin = 1)
-            if ddD == 1
-                sY = 1/(1+ksetn./mu);
+            if D == 1
+                sY = 1/(1+ksetn./RKbeta);
     
             else % for mixed and Ricker DD functions
-                DD = ( (ddD-1).*k2n.*exp(mu.*ddD.*k2n) ) ./ (ddD.*ksetn.*exp(mu.*ddD.*k2n) + exp(mu.*k2n) .* ((ddD-1).*k2n-ddD.*ksetn)  );
+                DD = ( (D-1).*k2n.*exp(RKbeta.*D.*k2n) ) ./ (D.*ksetn.*exp(RKbeta.*D.*k2n) + exp(RKbeta.*k2n) .* ((D-1).*k2n-D.*ksetn)  );
     
                 % second derivative of mixed DD function (calculted with matlab solver, see ExploringMixedDD_v0.m) 
-                DD2 = (2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)).^2)./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^3 - (k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(2.*mu.*exp(mu.*k2n).*(ddD - 1) + mu.^2.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^3.*ksetn.*mu.^2.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 - (2.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2 + (2.*ddD.*mu.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) + (ddD.^2.*mu.^2.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)) - (2.*ddD.*mu.*k2n.*exp(ddD.*mu.*k2n).*(ddD - 1).*(exp(mu.*k2n).*(ddD - 1) + mu.*exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD^2.*ksetn.*mu.*exp(ddD.*mu.*k2n)))./(exp(mu.*k2n).*(k2n.*(ddD - 1) - ddD.*ksetn) + ddD.*ksetn.*exp(ddD.*mu.*k2n)).^2;
+                DD2 = (2.*k2n.*exp(D.*RKbeta.*k2n).*(D - 1).*(exp(RKbeta.*k2n).*(D - 1) + RKbeta.*exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D^2.*ksetn.*RKbeta.*exp(D.*RKbeta.*k2n)).^2)./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)).^3 - (k2n.*exp(D.*RKbeta.*k2n).*(D - 1).*(2.*RKbeta.*exp(RKbeta.*k2n).*(D - 1) + RKbeta.^2.*exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.^3.*ksetn.*RKbeta.^2.*exp(D.*RKbeta.*k2n)))./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)).^2 - (2.*exp(D.*RKbeta.*k2n).*(D - 1).*(exp(RKbeta.*k2n).*(D - 1) + RKbeta.*exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.^2.*ksetn.*RKbeta.*exp(D.*RKbeta.*k2n)))./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)).^2 + (2.*D.*RKbeta.*exp(D.*RKbeta.*k2n).*(D - 1))./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)) + (D.^2.*RKbeta.^2.*k2n.*exp(D.*RKbeta.*k2n).*(D - 1))./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)) - (2.*D.*RKbeta.*k2n.*exp(D.*RKbeta.*k2n).*(D - 1).*(exp(RKbeta.*k2n).*(D - 1) + RKbeta.*exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D^2.*ksetn.*RKbeta.*exp(D.*RKbeta.*k2n)))./(exp(RKbeta.*k2n).*(k2n.*(D - 1) - D.*ksetn) + D.*ksetn.*exp(D.*RKbeta.*k2n)).^2;
                 
                 % per capita survival of settlers including scale transition
                 sY = DD + 0.5.*DD2.*muvar;
