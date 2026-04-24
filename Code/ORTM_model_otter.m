@@ -55,11 +55,7 @@
     crab_species = 'Dungeness_OR_LogNorm'; % opt: 'Dungeness_OR_Norm' | 'Dungeness_OR_LogNorm'
 
 % Choose your sea otters
-    otter_population = 'Scenario-Norm_SuccessSegment-S6.csv';    % opt: 'Table0.csv'
-                                                             %      'Scenario-Norm_SuccessSegment-S6.csv'
-                                                             %      'Scenario-Norm_SuccessSegment-N5.csv'
-                                                             %      'Scenario-Norm_SuccessSegment-C7.csv'
-                                                             %      'Scenario-Low_SuccesSegment-S6.csv'
+    otter_population = 'Table0.csv'; % opt: 'Table0.csv' | 'Scenario-High_SuccessSegment-S6.csv'
     
 
 %% 2) MODEL PARAMETERS (Set for "realism") --------------------------
@@ -79,8 +75,8 @@
 
 % Urchin parameters
     urchin = ParaUrchin_Implicit(tmax, urchin_species);
-        urchin.wu = 0.5;
-        urchin.phi = 1;
+        urchin.wu = 0.6;
+        urchin.phi = 0;
         
 % Crab (Dungeness) parameters
     crab = ParaCrab_Implicit(tmax, crab_species);
@@ -104,21 +100,21 @@
     end
 
 % URCHINS 🟣 [juvenile, hiding, expose]
-    % ut0 = [0, 1.92*10^3, 2.15*10^3];
-    ut0 = [0, 0, 0]; 
+    ut0 = [0, 1.92*10^3, 2.15*10^3];
+    % ut0 = [0, 0, 0]; 
 
 % CRABS 🦀 [age_0, age_1-10] (COMMON DENSITY (base-case; literature-consistent), for low density x*0.5, for high density x*3)
-    cft0 = [0, 495.82, 485.70, 0, 0, 379.70, 373.80, 0, 0, 365.27, 360.26, 0, 0, 327.85, 324.59, 0, 0, 256.46, 254.20, 0, ...
-            0, 217.93, 213.81, 0, 0, 160.08, 157.52, 0, 0, 133.66, 132.13, 0, 0, 108.86, 108.86, 0, 0, 92.55, 92.05, 0, 0, 77.74, 76.33, 0];
+    cft0 = [0, 753, 753, 0, 0, 587, 587, 0, 0, 555, 555, 0, 0, 501, 501, 0, 0, 391, 391, 0, ...
+            0, 331, 331, 0, 0, 243, 243, 0, 0, 203, 203, 0, 0, 165, 165, 0, 0, 142, 142, 0, 0, 118, 118, 0];
     % cft0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-    cmt0 = [0, 495.82, 485.70, 0, 0, 379.70, 373.80, 0, 0, 365.27, 360.26, 0, 0, 327.85, 324.59, 0, 0, 178.40, 127.37, 0, ...
-            0, 56.34, 39.87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    cmt0 = [[0, 753, 753, 0, 0, 587, 587, 0, 0, 555, 555, 0, 0, 501, 501, 0, 0, 391, 391, 0, ...
+            0, 241, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     % cmt0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 % Other prey (X)
-    % xt0 = 0;
-    xt0 = 5.1253e+03; % 100% of base-scenario adult crab biomass T = 81
+    xt0 = 0;
+    % xt0 = 5.1253e+03; % 100% of base-scenario adult crab biomass T = 81
     % xt0 = 2.5627e+03; % 50% of base-scenario adult crab biomass T = 81
     % xt0 = 1.0251e+03; % 20% of base-scenario adult crab biomass T = 81
 

@@ -26,8 +26,8 @@ A = 1:10; % Age classes
         Sc = [1; cumprod(S(:))];
 
     % Set recruitment
-        R = 2000000; % number of recruits
-        R = R * 0.000316; % recruits mass in kg
+        R = 1000; % 2000000; % number of recruits
+        % R = R * 0.000316; % recruits mass in kg
         N = sum(R*Sc);
 
         R_Sc = R*Sc;
@@ -46,7 +46,7 @@ A = 1:10; % Age classes
         phi = sum(Infl_c_n);
 
     % Kg of incoming recruits
-        R = 632; % Kg of incoming recruits
+        % R = 632; % Kg of incoming recruits
     
     % Solve for beta:
         b = -(k/(phi*R));

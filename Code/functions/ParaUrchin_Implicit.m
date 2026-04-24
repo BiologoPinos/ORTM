@@ -38,11 +38,11 @@ function urchin = ParaUrchin_Implicit(tmax, species)
         MEU = [0.1; 0.1]; % exposed adults
 
     % Per kg mortality of urchins - search/attack rate (relevant for type II)
-        aE = [0.615; 0.365]; % exposed 
+        aE = [0.615; 0.365]; % 0.365 % exposed 
         aH = aE.*0.5; % hiding
 
     % Max kg of urchins consumed by a kg of predator (1/handling time) (relevant for type II)
-        bE = [1/0.0733; 1/0.0733]; % exposed
+        bE = [1/0.0733; 1/0.0733]; % 1/0.0733 % exposed
         bH = bE.*0.5; % hiding
 
     % Predator baseline preference (relevant for Yodzis functional response)

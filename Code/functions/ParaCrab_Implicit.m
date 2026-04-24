@@ -13,10 +13,10 @@ function crab = ParaCrab_Implicit(tmax, species)
 % Recruitment:
 
     % Recruitment (egg production) (Higgins et al., 1997)
-        RC = [632; 632];
+        RC = [50000; 1000];
 
     % Temporal Standard deviation
-        RCstdv = [1.26; 1.26]; %% NEED NUMBER
+        RCstdv = [1.26; 1.26];
 
     % Recruitment distribution
         RCdist = {'normal'; 'log-normal'};
@@ -25,7 +25,7 @@ function crab = ParaCrab_Implicit(tmax, species)
         RTC = repmat([0 0.5 0.5 0; ...
                       0 0.5 0.5 0],1,tmax/4);
 
-        beta = [1.58e-3; 1.58e-3];
+        beta = [2.0000e-05; 1.0000e-03];
 
 % Mortality:
 
@@ -39,13 +39,13 @@ function crab = ParaCrab_Implicit(tmax, species)
                      0.33 0.33 0.33 0], 1, tmax/4); 
 
     % Per kg mortality of crabs - search/attack rate (relevant for type II)
-        aC = [0.615; 0.275]; 
+        aC = [0.615; 0.497]; % 0.275
 
     % Handling time or max prey consumed "h = 1/handling time" (relevant for type II)
-        bC = [1/0.0545; 1/0.0545];
+        bC = [1/0.0545; 1/0.0545]; % 1/0.0545
 
     % Predator baseline preference (relevant for Yodzis functional response)
-        wc = [0.3; 0.5];
+        wc = [0.5; 0.5];
 
     % Normalized Cannibalism influence function
         NCIF = {[0.0028; 0.0028; 0.0028; 0.0028; 
@@ -69,11 +69,35 @@ function crab = ParaCrab_Implicit(tmax, species)
                  0.1457; 0.1457; 0.1457; 0.1457; 
                  0.1457; 0.1457; 0.1457; 0.1457]};
 
+% Crab weight
+    weight = {[3.1600e-04; 3.1600e-04; 3.1600e-04; 3.1600e-04; ...
+               0.0145; 0.0145; 0.0145; 0.0145; ...
+               0.3012; 0.3012; 0.3012; 0.3012; ...
+               0.5576; 0.5576; 0.5576; 0.5576; ...
+               0.9223; 0.9223; 0.9223; 0.9223; ...
+               1.4115; 1.4115; 1.4115; 1.4115; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405];
+               [3.1600e-04; 3.1600e-04; 3.1600e-04; 3.1600e-04; ...
+               0.0145; 0.0145; 0.0145; 0.0145; ...
+               0.3012; 0.3012; 0.3012; 0.3012; ...
+               0.5576; 0.5576; 0.5576; 0.5576; ...
+               0.9223; 0.9223; 0.9223; 0.9223; ...
+               1.4115; 1.4115; 1.4115; 1.4115; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405; ...
+               2.0405; 2.0405; 2.0405; 2.0405]};
+
 % Build Dungeness populations table:
 
     % join in table
-        Paratable = table(RC, RCstdv, RCdist, RTC, beta, MRC, MJC, MAC, FC, aC, bC, wc, NCIF,  ...
-                  'RowNames', Species);
+        Paratable = table(RC, RCstdv, RCdist, RTC, beta, MRC, MJC, MAC, FC, ...
+                          aC, bC, wc, NCIF, weight, 'RowNames', Species);
     
     % select species
         crab = Paratable(species,:);
