@@ -13,7 +13,7 @@ function crab = ParaCrab_Implicit(tmax, species)
 % Recruitment:
 
     % Recruitment (egg production) (Higgins et al., 1997)
-        RC = [50000; 1000];
+        RC = [1000; 1000];
 
     % Temporal Standard deviation
         RCstdv = [1.26; 1.26];
@@ -25,7 +25,7 @@ function crab = ParaCrab_Implicit(tmax, species)
         RTC = repmat([0 0.5 0.5 0; ...
                       0 0.5 0.5 0],1,tmax/4);
 
-        beta = [2.0000e-05; 1.0000e-03];
+        beta = [1.0000e-03; 1.0000e-03];
 
 % Mortality:
 
@@ -39,13 +39,13 @@ function crab = ParaCrab_Implicit(tmax, species)
                      0.33 0.33 0.33 0], 1, tmax/4); 
 
     % Per kg mortality of crabs - search/attack rate (relevant for type II)
-        aC = [0.615; 0.497]; % 0.275
+        aC = [0.897; 0.897]; 
 
     % Handling time or max prey consumed "h = 1/handling time" (relevant for type II)
-        bC = [1/0.0545; 1/0.0545]; % 1/0.0545
+        bC = [1/0.0545; 1/0.0545]; 
 
     % Predator baseline preference (relevant for Yodzis functional response)
-        wc = [0.5; 0.5];
+        wc = [0.3; 0.3];
 
     % Normalized Cannibalism influence function
         NCIF = {[0.0028; 0.0028; 0.0028; 0.0028; 

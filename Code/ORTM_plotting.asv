@@ -160,18 +160,18 @@
         hold on
 
         % Over seasons? (note: baseline always at the end)
-            % plot((1:T2+1), sum(kt2(2, :, :)>0, 3)./RR, 'k', 'LineWidth', 4) % baseline
-            % plot((1:T2+1), sum(kt2(2, :, :)>0, 3)./RR, 'b', 'LineWidth', 4) % management (note: choose color)
+            % plot((1:T2+1), sum(kt2(2, :, :)>0, 3)./RR, 'k', 'LineWidth', 1.5) % baseline
+            % plot((1:T2+1), sum(kt2(2, :, :)>0, 3)./RR, 'b', 'LineWidth', 1.5) % management (note: choose color)
 
         % Over years
-            plot(((0:T2)/4), sum(kt2(2, :, :)>0, 3)./RR, 'c--', 'LineWidth',4) % baseline
-            % plot(((0:T2)/4), sum(kt2(2, :, :)>0, 3)./RR, 'b', 'LineWidth',4) % management (note: choose color)
+            plot(((0:T2)/4), sum(kt2(2, :, :)>0, 3)./RR, 'c--', 'LineWidth',1.5) % baseline
+            % plot(((0:T2)/4), sum(kt2(2, :, :)>0, 3)./RR, 'b', 'LineWidth',1.5) % management (note: choose color)
 
         % When does management starts?
-            % xline((dist.yrs(1)/4),'--','Mng. Period','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',26) % start of management (years)
-            % xline((dist.yrs(1)/4)+2,'--','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',26) % start of management (years)
-            % xline(dist.yrs(1),'--','Start Mng','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',22) % start of management (seasons)
-            % xline(buffer/4,'--','Sea Otter Reintroduction','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',26) % Sea otter reintroduction (years)
+            % xline((dist.yrs(1)/4),'--','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',14) % start of management (years)
+            % xline((dist.yrs(1)/4)+1,'--','End Mng','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',14) % start of management (years)
+            % xline(dist.yrs(1),'--','Start Mng','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',11) % start of management (seasons)
+            % xline(buffer/4,'--','Sea Otter Reintroduction','Color','k','LabelHorizontalAlignment','left','LabelVerticalAlignment','bottom','FontSize',11) % Sea otter reintroduction (years)
 
         % Limits
             xlim([0,25])  

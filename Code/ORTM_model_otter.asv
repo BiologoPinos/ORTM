@@ -55,7 +55,7 @@
     crab_species = 'Dungeness_OR_LogNorm'; % opt: 'Dungeness_OR_Norm' | 'Dungeness_OR_LogNorm'
 
 % Choose your sea otters
-    otter_population = 'Scenario-High_SuccessSegment-S6.csv'; % opt: 'Table0.csv' | 'Scenario-High_SuccessSegment-S6.csv'
+    otter_population = 'Table0.csv'; % opt: 'Table0.csv' | 'Scenario-High_SuccessSegment-S6.csv'
     
 
 %% 2) MODEL PARAMETERS (Set for "realism") --------------------------
@@ -75,17 +75,19 @@
 
 % Urchin parameters
     urchin = ParaUrchin_Implicit(tmax, urchin_species);
+        urchin.wu = 0.6;
         urchin.phi = 0;
         
 % Crab (Dungeness) parameters
     crab = ParaCrab_Implicit(tmax, crab_species);
+        crab.wc = 0.3;
 
 % Predator simulated (sheep-head, CA_model)
     pred = ParaPred_Implicit(tmax); % NEED REVISSION - CA model not working
 
 % Predator forced inputs (sea otters, OR_model)
     ORSO_data = fullfile(ORSO, otter_population);
-    otter_reintro_buffer = 5*4; % 5*4; % 0; % Buffer allows kelp–urchin to stabilize
+    otter_reintro_buffer = 0; % 5*4; % 0; % Buffer allows kelp–urchin to stabilize
             
 
 %% 3) INITIAL CONDITIONS (Set for "realism") --------------------------
@@ -111,8 +113,8 @@
     % cmt0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 % Other prey (X)
-    % xt0 = 0;
-    xt0 = 5.1253e+03; % 100% of base-scenario adult crab biomass T = 81
+    xt0 = 0;
+    % xt0 == 5.1253e+03; % 100% of base-scenario adult crab biomass T = 81
     % xt0 == 2.5627e+03; % 50% of base-scenario adult crab biomass T = 81
     % xt0 == 1.0251e+03; % 20% of base-scenario adult crab biomass T = 81
 
@@ -120,28 +122,32 @@
 %% 4) MANAGEMNET & DISTURBANCE -------------------------- 
     
 % Disturbance length (How long the disturbance will last)
-    dist.lngth = 1;  
+    dist.lngth = 0;  
 
 % Disturbance timing (When the disturbance will happen)
     if dist.lngth == 0
         dist.yrs = NaN; % no disturbance (default)
     else    
-        dist.yrs = (7*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
+        dist.yrs = (10*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
+        % dist.yrs = (20*4) + repmat(1:4,1,dist.lngth) + repelem(((1:dist.lngth)-1)*4,4);
     end 
        
 % How do vital rates change during the disturbance (heatwave) 
 
-    % Kelp recruitment
-        dist.RK = kelp.RK; % dist.RK = kelp.RK/7; % for heat wave version
+    % kelp recruitment
+        dist.RK = kelp.RK; 
+        % dist.RK = kelp.RK/7; % for heat wave version
     
     % Kelp biomass growth reduction during disturbance
-        dist.lambda = kelp.lambda; % dist.lambda = kelp.lambda.* repmat([1 1 0.5 0.5],1,tmax/4); % for heat wave version  
+        dist.lambda = kelp.lambda; 
+        % dist.lambda = kelp.lambda.* repmat([1 1 0.5 0.5],1,tmax/4); % for heat wave version  
     
-    % Urchin grazing increase during disturbance
-        dist.hij = kelp.hij; % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4); % for heat wave version
+    % urchin grazing increase during disturbance
+        dist.hij = kelp.hij; 
+        % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4); % for heat wave version
 
 % Which management scenario to run over?
-    mngt_scen = 'cull&rest'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest'; %  
+    mngt_scen = 'none'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest'; %  
 
 % Get vector values
     mngt            = ParaMngt_Implicit(mngt_scen);
@@ -179,6 +185,9 @@
         buffer = otter_reintro_buffer; % Buffer is set in section 1 
         pred_forced = [zeros(buffer, RR); pred_forced];
     end   
+
+% Realized sea otter feeding rates (multipliers)
+    otterFR = NaN(4, T2, length(mngt.time), length(mngt.length), deglngth, RR);
 
 % Prey consumed
     prey_consumed = NaN(4, T2, length(mngt.time), length(mngt.length), deglngth, RR);
@@ -249,7 +258,7 @@
     elseif strcmp(model,'Oregon_Andres')
 
         % Forced predator (otter) model with crabs (OR version)
-        [kt2,ut2,~,cft2,cmt2,RK_noise,prey_consumed2] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, T2, RR, ...
+        [kt2,ut2,~,cft2,cmt2,RK_noise,otterFR2,prey_consumed2] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, T2, RR, ...
                          kt0, ut0, cft0, cmt0, xt0, pred_forced, dist);
     end
 
@@ -261,6 +270,7 @@
     uts(:,:,h,i,j,:)            = ut2;  % Urchin biomass
     cfts(:,:,h,i,j,:)           = cft2; % Female crab biomass
     cmts(:,:,h,i,j,:)           = cmt2; % Male crab biomass
+    otterFR(:,:,h,i,j,:)        = otterFR2; % Otter feeding rates
     prey_consumed(:,:,h,i,j,:)  = prey_consumed2; % Prey consumed
 
 % Calculate kelp average (mean over last 1 year of run)

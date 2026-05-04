@@ -1,4 +1,4 @@
-function [kt,ut,GC,cft,cmt,RK_noise,otterFR,prey_consumed] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, tmax, RR, kt1, ut1, cft1, cmt1, xt1, nt, dist)
+function [kt,ut,GC,cft,cmt,RK_noise,prey_consumed] = run_UrchinKelpCrab_Implicit(kelp, urchin, crab, tmax, RR, kt1, ut1, cft1, cmt1, xt1, nt, dist)
 
 % Description:
     % function running single populations kelp <> urchins model
@@ -42,7 +42,8 @@ function [kt,ut,GC,cft,cmt,RK_noise,otterFR,prey_consumed] = run_UrchinKelpCrab_
     aE          = urchin.aE;
     bH          = urchin.bH;
     bE          = urchin.bE;
-    wu          = urchin.wu;
+    % wu        = urchin.wu; % unpacked later
+    wu_psi      = urchin.wu_psi;
     phi         = urchin.phi;
     FU          = urchin.FU;
     PLD         = urchin.PLD;
@@ -63,7 +64,7 @@ function [kt,ut,GC,cft,cmt,RK_noise,otterFR,prey_consumed] = run_UrchinKelpCrab_
     FC          = crab.FC;
     aC          = crab.aC;
     bC          = crab.bC;
-    wc          = crab.wc;
+    % wc        = crab.wc; % unpacked later
     NCIF        = crab.NCIF{1};
     weight      = crab.weight{1};
     weight      = reshape(weight,44,1,1);
@@ -76,11 +77,8 @@ function [kt,ut,GC,cft,cmt,RK_noise,otterFR,prey_consumed] = run_UrchinKelpCrab_
 %% VECTORS FOR STATE VARIABLES --------------------------
 
     % Predator
-        nt = reshape(nt,[],1,RR); % nt = nt([],1,RR);
-    
-    % Feeding rate
-        otterFR = NaN(4, tmax, RR);
-    
+        nt = reshape(nt,[],1,RR);
+      
     % Prey consumed
         prey_consumed = NaN(4, tmax, RR);
     
@@ -145,110 +143,151 @@ for t = 1:tmax
     end
 
 
-    %% RUN INNER LOOP (daily predation)
+%% DAILY PREDATION INNER LOOP --------------------------
 
-        % Number of days within a season (time step)
-            ndays = 91;
-            
-        % Vectors for state variables (daily prey biomass)
+    % Days within a season
+        ndays = 91;
         
-            % Urchins
-                ut_d = NaN(3, ndays+1, RR);
-                ut_d(:,1,:) = ut(:,t,:);
+    % Vectors for state variables
         
-            % Dungeness crab females
-                cft_d = NaN(44, ndays+1, RR);
-                cft_d(:,1,:) = cft(:,t,:);
-        
-            % Dungeness crab males
-                cmt_d = NaN(44, ndays+1, RR);
-                cmt_d(:,1,:) = cmt(:,t,:);
-           
-            % Predator (same number)
-                nt_season = reshape(nt(t,:,:), 1, 1, RR);
+        % Predator 🦦
+            nt_season = reshape(nt(t,:,:), 1, 1, RR);
 
-            % Prey vectors (S, A, X)
-                S = NaN(1, ndays+1, RR);
-                A = NaN(1, ndays+1, RR);
-                X = NaN(1, ndays+1, RR);
-
-            % Preference vectors
-                p1 = NaN(1, ndays+1, RR);       
-                p2 = NaN(1, ndays+1, RR);
-
-            % Feeding rate vectors
-                feed_rate_uh = NaN(1, ndays+1, RR);
-                feed_rate_ue = NaN(1, ndays+1, RR);
-                feed_rate_cf = NaN(1, ndays+1, RR);
-                feed_rate_cm = NaN(1, ndays+1, RR);
- 
-        % Run daily predation loop
-        
-            for tt = 1:ndays
-
-                % Yodzis preference/switching        
-
-                    % Compute available biomasses per replicate (shape 1 x 1 x RR)
-                        S(:,tt,:) = sum(ut_d(2:3, tt, :), 1);   % 1 x 1 x RR -> urchin available biomass
-                        A(:,tt,:) = sum(cft_d(9:end, tt, :) + cmt_d(9:end, tt, :) .* weight(9:end), 1); % adult crab available biomass
-                        X(:,tt,:) = xt1;
-
-                    % Predator presence mask
-                        hasPred = (nt_season > 0); % 1 x 1 x RR
+        % Urchins 
+            ut_d = NaN(3, ndays+1, RR);
+            ut_d(:,1,:) = ut(:,t,:);
     
-                    % Compute switching fractions
-                        % p1(:,tt,:) = 1;   % shape 1x1xRR + smallEPS
-                        % p2(:,tt,:) = 1;   % shape 1x1xRR + smallEPS
-                        p1(:,tt,:) = wu .* (S(:,tt,:) .^ phi) ./ (wu .* (S(:,tt,:) .^ phi) + wc .* (A(:,tt,:) .^ phi) + (1-wu-wc) .* (X(:,tt,:) .^ phi));   % shape 1x1xRR + smallEPS
-                        p2(:,tt,:) = wc .* (A(:,tt,:) .^ phi) ./ (wu .* (S(:,tt,:) .^ phi) + wc .* (A(:,tt,:) .^ phi) + (1-wu-wc) .* (X(:,tt,:) .^ phi));   % shape 1x1xRR + smallEPS
-                   
-                    % No predators → no switching 
-                        p1(:,tt,~hasPred) = 0; 
-                        p2(:,tt,~hasPred) = 0;
+        % Dungeness crab females
+            cft_d = NaN(44, ndays+1, RR);
+            cft_d(:,1,:) = cft(:,t,:);
+    
+        % Dungeness crab males
+            cmt_d = NaN(44, ndays+1, RR);
+            cmt_d(:,1,:) = cmt(:,t,:);
 
-                % Feeding rates
-                    
-                    % Urchins
-                        feed_rate_uh(:,tt,:) = exp(p1(:,tt,:) .* (-Func_TypeII(aH, bH, S(:,tt,:)) .* nt_season(:,:,:))); % hiding
-                        feed_rate_ue(:,tt,:) = exp(p1(:,tt,:) .* (-Psi .* Func_TypeII(aE, bE, S(:,tt,:)) .* nt_season(:,:,:))); % exposed
+    % Predation vectors
 
-                    % Crabs
-                        feed_rate_cf(:,tt,:) = exp(p2(:,tt,:) .*(-Func_TypeII(aC, bC, A(:,tt,:)) .* nt_season(:,:,:))); % females
-                        feed_rate_cm(:,tt,:) = exp(p2(:,tt,:) .*(-Func_TypeII(aC, bC, A(:,tt,:)) .* nt_season(:,:,:))); % males
+        % Prey vectors (S, A, X)
+            S = NaN(1, ndays+1, RR); % urchins
+            A = NaN(1, ndays+1, RR); % crabs
+            X = NaN(1, ndays+1, RR); % prey X
 
-                % Daily predation 
+        % Preference vectors
+            p1 = NaN(1, ndays+1, RR);       
+            p2 = NaN(1, ndays+1, RR);
+
+        % Feeding rate vector
+            f_rate = NaN(4, ndays+1, RR);
+
+    % Set conditions for predation on kelp or barren state:
+        
+        % Predation on urchins threshold (barren vs kelp)
+            % Note: if for 2 seasons kelp biomass is bellow threshold (kmin),
+            % then predators stop feeding on urchins
+            % Psi is 1 until k < kmin for consecutive time periods
+            if t>2                                                        
+                ktdelay = sum(kt(1:2,(t-2:t-1),:));   
+                Psi = squeeze(sum(ktdelay < kmin, 2)) ~= 2;
+                Psi = reshape(Psi, 1, 1, RR);
+            end
+
+        % Adjust intrinsic preferences (w) based on Psi
+            % Note: when Psi = 0, preference on urchins (wu) decreases and 
+            %       gets re-allocated on other prey. Furthermore, predation
+            %       on exposed urchins gets turned off (line 238, f_rate(2,tt,:)), 
+            %       because these are starved urchins.
+
+            % Default (kelp state) preferences
+                wu = urchin.wu .* ones(1,1,RR);
+                wc = crab.wc   .* ones(1,1,RR);
+
+            % Barren state adjusted preferences (determined by Psi)
+                wu(Psi == 0) = wu_psi;
+                wc(Psi == 0) = wc(1,1,1) / (1-wu_psi);
+
+    % RUN DAILY PREDATION
+    
+        for tt = 1:ndays
+
+            % Preference/switching:        
+
+                % Available biomass per prey class
+                    S(:,tt,:) = sum(ut_d(2:3, tt, :), 1);   % Urchin biomass
+                    A(:,tt,:) = sum((cft_d(9:end, tt, :) .* weight(9:end)) + ...
+                                    (cmt_d(9:end, tt, :) .* weight(9:end)), 1); % Adult crab biomass
+                    X(:,tt,:) = xt1;
+
+                % Predator presence mask
+                    hasPred = (nt_season > 0); % 1 x 1 x RR
+
+                % Yodzis switching fraction
+                    denom = max((wu .* (S(:,tt,:) .^ phi) + ...
+                                 wc .* (A(:,tt,:) .^ phi) + ...
+                                 (1-wu-wc) .* (X(:,tt,:) .^ phi)), eps);
+                    p1(:,tt,:) = wu .* (S(:,tt,:) .^ phi) ./ denom;
+                    p2(:,tt,:) = wc .* (A(:,tt,:) .^ phi) ./ denom;
+               
+                % No predators → no switching 
+                    p1(:,tt,~hasPred) = 0; 
+                    p2(:,tt,~hasPred) = 0;
+
+            % Feeding rates (Yodzis & Type II):
                 
-                    % Urchins (juveniles unaffected by predation)
-                        ut_d(1,tt+1,:) = ut_d(1,tt,:);
-                        ut_d(2,tt+1,:) = ut_d(2,tt,:) .* feed_rate_uh(:,tt,:); % hiding
-                        ut_d(3,tt+1,:) = ut_d(3,tt,:) .* feed_rate_ue(:,tt,:); % exposed
-        
-                    % Female crabs (age 0-1 unaffected by predation)
-                        cft_d(1:8,tt+1,:) = cft_d(1:8,tt,:);
-                        cft_d(9:end,tt+1,:) = cft_d(9:end,tt,:) .* feed_rate_cf(:,tt,:); % female
+                % Urchins
+                    f_rate(1,tt,:) = exp(-Func_TypeII((aH .* p1(:,tt,:)), bH, S(:,tt,:)) .* nt_season(:,:,:)); % hiding
+                    f_rate(2,tt,:) = exp(-Psi .* Func_TypeII((aE .* p1(:,tt,:)), bE, S(:,tt,:)) .* nt_season(:,:,:)); % exposed
+
+                % Crabs
+                    f_rate(3,tt,:) = exp(-Func_TypeII((aC .* p2(:,tt,:)), bC, A(:,tt,:)) .* nt_season(:,:,:)); % females
+                    f_rate(4,tt,:) = exp(-Func_TypeII((aC .* p2(:,tt,:)), bC, A(:,tt,:)) .* nt_season(:,:,:)); % males
+
+            % Daily predation: 
             
-                    % Daily predation on male crabs (age 0-1 unaffected by predation)
-                        cmt_d(1:8,tt+1,:) = cmt_d(1:8,tt,:);
-                        cmt_d(9:end,tt+1,:) = cmt_d(9:end,tt,:) .* feed_rate_cm(:,tt,:); % male
-
-            end % end daily loop
+                % Urchins 🦦➡🟣
+                    ut_d(1,tt+1,:) = ut_d(1,tt,:); % juveniles unaffected
+                    ut_d(2,tt+1,:) = ut_d(2,tt,:) .* f_rate(1,tt,:); % hiding
+                    ut_d(3,tt+1,:) = ut_d(3,tt,:) .* f_rate(2,tt,:); % exposed
     
-        % Extract post-predation (end-of-season) biomasses
-            ut_post     = ut_d(:, end, :);   % 3 x 1 x RR
-            cft_post    = cft_d(:, end, :); % 44 x 1 x RR
-            cmt_post    = cmt_d(:, end, :); % 44 x 1 x RR
+                % Female crabs 🦦➡🦀
 
-        % Extract the realized sea otter feeding rates
-            otterFR(1,t,:) = mean(feed_rate_uh(:,1:ndays,:), 2);   % urchin hiding
-            otterFR(2,t,:) = mean(feed_rate_ue(:,1:ndays,:), 2);   % urchin exposed
-            otterFR(3,t,:) = mean(feed_rate_cf(:,1:ndays,:), 2);   % female crab
-            otterFR(4,t,:) = mean(feed_rate_cm(:,1:ndays,:), 2);   % male crab
+                    % Age 0-1 [1:8] unaffected by predation
+                    cft_d(1:8,tt+1,:) = cft_d(1:8,tt,:);
 
-        % Realized prey consumed during the season
-            prey_consumed(1,t,:) = max(squeeze(ut_d(2,1,:) - ut_d(2,end,:)), 0);                 % hiding urchins
-            prey_consumed(2,t,:) = max(squeeze(ut_d(3,1,:) - ut_d(3,end,:)), 0);                 % exposed urchins
-            prey_consumed(3,t,:) = max(squeeze(sum(cft_d(9:end,1,:),1) - sum(cft_d(9:end,end,:),1)), 0);  % female crabs
-            prey_consumed(4,t,:) = max(squeeze(sum(cmt_d(9:end,1,:),1) - sum(cmt_d(9:end,end,:),1)), 0);  % male crabs
+                    % Convert adult counts → biomass
+                    cf_bio = cft_d(9:end,tt,:) .* weight(9:end);
+
+                    % Apply predation (Feeding rates) to biomass
+                    cf_bio_post = cf_bio .* f_rate(3,tt,:);
+
+                    % Convert back to counts
+                    cft_d(9:end,tt+1,:) = cf_bio_post ./ weight(9:end);
+        
+                % Male crabs 🦦➡🦀
+
+                    % Age 0-1 [1:8] unaffected by predation
+                    cmt_d(1:8,tt+1,:) = cmt_d(1:8,tt,:);
+
+                    % Convert adult counts → biomass
+                    cm_bio = cmt_d(9:end,tt,:) .* weight(9:end);
+
+                    % Apply predation (Feeding rates) to biomass
+                    cm_bio_post = cm_bio .* f_rate(4,tt,:);
+
+                    % Convert back to counts
+                    cmt_d(9:end,tt+1,:) = cm_bio_post ./ weight(9:end);
+
+        end % end daily loop
+
+    % Extract post-predation (end-of-season)
+        ut_post   = ut_d(:, end, :);  % 3 x 1 x RR % Biomass
+        cft_post  = cft_d(:, end, :); % 44 x 1 x RR % Counts
+        cmt_post  = cmt_d(:, end, :); % 44 x 1 x RR % Counts
+
+    % Realized prey consumed during the season
+        prey_consumed(1,t,:) = max(ut_d(2,1,:) - ut_d(2,end,:), 0); % biomass hiding urchins
+        prey_consumed(2,t,:) = max(ut_d(3,1,:) - ut_d(3,end,:), 0); % biomass exposed urchins
+        prey_consumed(3,t,:) = max(sum(cft_d(9:end,1,:),1) - sum(cft_d(9:end,end,:),1), 0); % counts female crabs
+        prey_consumed(4,t,:) = max(sum(cmt_d(9:end,1,:),1) - sum(cmt_d(9:end,end,:),1), 0); % counts male crabs
 
 
 %% RUN CRAB (Dungeness) 🦀 --------------------------
@@ -295,12 +334,6 @@ for t = 1:tmax
 
 %% RUN URCHINS 🟣 --------------------------
     
-% Predation on urchin threshold (set earlier values for delay)
-    if t>2                                    % if for last 6 months (2 seasons) kelp biomass is bellow threshold (kmin),                       
-        ktdelay = sum(kt(1:2,(t-2:t-1),:));   % then predators stop feeding (and urchin fishing turns off)      
-        Psi = sum(ktdelay < kmin) ~= 2;       % Psi is 1 until k < kmin for consecutive time periods
-    end
-  
 % Survival (urchins)
 
     % Juveniles (juv):

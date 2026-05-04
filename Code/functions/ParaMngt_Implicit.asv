@@ -23,7 +23,7 @@ if contains(scenario,{'cull', 'rest'})
         mngt.time =  0;        
 
     % Length of mngt action (timesteps). For how long
-        mngt.length = 1*4;    
+        mngt.length = 2*4;    
 
 
 end
@@ -43,7 +43,7 @@ if contains(scenario,'cull')
         mngt.culling = "Y";  
 
     % Proportion of biomass removed in a season (kg.ha)
-        mngt.degreeC = (1*4.6286e+03); % Target is to remove 4.6286e+03 urchins total      
+        mngt.degreeC = (1*4.6286e+03; % Target is to remove 4.6286e+03 urchins total      
 
 end
 
@@ -60,7 +60,7 @@ if contains(scenario,'rest')
     
     
         % Proportion of biomass of recruits added per season (kg.ha)
-            mngt.degreeR =  (1*(1.0094e+04 * 4)); % Target is to add 4 times more the mean peak spore production (1.0094e+04 * 4)  
+            mngt.degreeR =  1*(1.0094e+04 * 4); % Target is to add 4 times more the mean peak spore production (1.0094e+04 * 4)  
 
 end
 

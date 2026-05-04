@@ -38,15 +38,18 @@ function urchin = ParaUrchin_Implicit(tmax, species)
         MEU = [0.1; 0.1]; % exposed adults
 
     % Per kg mortality of urchins - search/attack rate (relevant for type II)
-        aE = [0.615; 0.365]; % 0.365 % exposed 
+        aE = [0.615; 0.597]; % exposed 
         aH = aE.*0.5; % hiding
 
     % Max kg of urchins consumed by a kg of predator (1/handling time) (relevant for type II)
-        bE = [1/0.0733; 1/0.0733]; % 1/0.0733 % exposed
+        bE = [1/0.0733; 1/0.0366]; % exposed
         bH = bE.*0.5; % hiding
 
     % Predator baseline preference (relevant for Yodzis functional response)
         wu = [0.5; 0.5];
+
+    % Predator adjusted preference under barren regime (Psi = 0)
+        wu_psi = [0.1; 0.1];
 
     % Predator preference sensitivity to relative abundance of prey (relevant for Yodzis functional response)
         phi = [0; 0];
@@ -76,8 +79,8 @@ function urchin = ParaUrchin_Implicit(tmax, species)
 
     % join in table
         Paratable = table(RU, RUstdv, RUdist, RTU, gJ, MJU, MHU, MEU, aE, ...
-                          aH, bE, bH, wu, phi, FU, PLD, tau, w1, w2, kmin, ...
-                            'RowNames', Species);
+                          aH, bE, bH, wu, wu_psi, phi, FU, PLD, tau, w1, w2, ...
+                          kmin, 'RowNames', Species);
     
     % select species
         urchin = Paratable(species,:);

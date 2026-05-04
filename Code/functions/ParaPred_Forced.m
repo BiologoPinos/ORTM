@@ -4,42 +4,38 @@ function pred_forced = ParaPred_Forced(ORSO_data,RR)
     % sets predator forcing data for the model using scenario replicates
     % ORSO data is expressed in densities (number of individuals per km^2)
         % need to change to number of individuals or biomass per hectare
-    % applies sea otter biomass (mean = 23.02 kg, SD = 4.38 kg)
-    % biomass variability reflects a population with a 35% male / 65% female sex ratio
+    % applies sea otter biomass (mean = 32 kg, SD = 4.38 kg)
 
-% read the CSV
-    otter_data = readtable(ORSO_data, 'VariableNamingRule', 'preserve');
+% Read the CSV
+    ORSO_raw_data = readtable(ORSO_data, 'VariableNamingRule', 'preserve');
 
-% extract replicate columns (ignore first column: Years)
-    replicate_data = otter_data{:, 2:end};
+% Extract data (ignore first column: Years)
+    otter_densities = ORSO_raw_data{:, 2:end};
 
-% validate RR
-    n_total_reps = size(replicate_data, 2);
-    if RR > n_total_reps
-        error('RR (%d) exceeds number of available replicates (%d).', RR, n_total_reps);
+% Validate ORSO replicates
+    ORSO_replicates = size(otter_densities, 2);
+    if RR > ORSO_replicates
+        error('RR (%d) exceeds number of available ORSO replicates (%d).', RR, ORSO_replicates);
     end
 
-% select first RR replicates
-    replicate_data = replicate_data(:, 1:RR);
+% Pair model RR with ORSO replicates
+    otter_densities = otter_densities(:, 1:RR);
 
-% apply biomass scaling (one value per year per replicate)
-    n_years = size(replicate_data, 1);
+% Create biomass values (kg per otter) with variation
+    biomass = 32 + 4.38 .* randn(size(otter_densities, 1), RR);  % normal distribution (mean ± SD)
 
-% biomass per individual (kg) with normal variation
-    biomass = 36 + 4.38 .* randn(n_years, RR);  % normal distribution (mean ± SD)
-
-% ensure no negative biomass values (truncate if needed)
+% Ensure no negative biomass values (truncate if needed)
     biomass(biomass < 0) = 0;
 
-% multiply raw replicate values by biomass per individual per hectare
-    scaled_data = (replicate_data ./ 100) .* biomass;
+% Rescale mean otter densities to densities in suitable habitat (Only valid for S6)
+    new_otter_densities = otter_densities * (123.96/36.66);
+    % ORSO estimates densities to S6 area of 123.96km^2, out of which (roughly) only 
+    % 36.66km^2 are actually suitable for otters
     
+% Transform otter densities (indv/km^2) to biomass densities (kg/ha)
+    scaled_data = (new_otter_densities .* biomass) / 100;
 
-% % change to otters per hectare (original value is in otters per km^2)
-%     scaled_data = replicate_data ./ 100;
-
-% repeat each year's row 4 times (for 4 seasons)
-    pred_forced = repelem(scaled_data, 4, 1); % final size = (n_years*4 x RR)
-
+% Replicate Otter annual densities to seasons
+    pred_forced = repelem(scaled_data, 4, 1); 
 
 end
