@@ -65,7 +65,7 @@
     T2 = 40*4; % for kelp-urchin runs
 
 % Number of replicates (RR) - Max 10000 because of ORSO 
-    RR =  100;
+    RR =  10000;
 
 % Length of run + buffer
     tmax = T2+100;
@@ -111,13 +111,15 @@
     % cmt0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 % Other prey (X)
+    xt0 = 5.1253e+03; % 100% of base adult crab biomass T = 81
+    % xt0 = 2.5627e+03; % 50% of base adult crab biomass T = 81
+    % xt0 = 1.0251e+03; % 20% of base adult crab biomass T = 81
     % xt0 = 0;
-    xt0 = 5.1253e+03; % 100% of base-scenario adult crab biomass T = 81
-    % xt0 == 2.5627e+03; % 50% of base-scenario adult crab biomass T = 81
-    % xt0 == 1.0251e+03; % 20% of base-scenario adult crab biomass T = 81
 
     
 %% 4) MANAGEMNET & DISTURBANCE -------------------------- 
+
+    % User Note: Modify ParaMngt_Implicit.m script accordingly  
     
 % Disturbance length (How long the disturbance will last)
     dist.lngth = 1;  
@@ -141,15 +143,19 @@
         dist.hij = kelp.hij; % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4); % for heat wave version
 
 % Which management scenario to run over?
-    mngt_scen = 'cull&rest'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest'; %  
+    mngt_scen = 'cull&rest'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest';  
 
 % Get vector values
-    mngt            = ParaMngt_Implicit(mngt_scen);
+    mngt = ParaMngt_Implicit(mngt_scen);
     pred.fish       = mngt.fish;
     urchin.culling  = mngt.culling;
     kelp.restore    = mngt.restore;
     urchin.season   = mngt.season;
     kelp.season     = mngt.season;
+    urchin.strategy = mngt.strategy;
+    urchin.time_vec = mngt.time_vec;
+    kelp.strategy   = mngt.strategy;
+    kelp.time_vec   = mngt.time_vec;
 
 
 %% 5) PRE-ASSIGN VARIABLES (empty vectors) --------------------------
@@ -187,9 +193,10 @@
 %% 6) RUN MODELS --------------------------
 
 % Run managements:
+
     % run over timing of mngt action
         for h = 1:length(mngt.time)
-        
+
             if contains(mngt_scen,'fish')
                 pred.fishtime = mngt.time(h)+T1;    end
             if contains(mngt_scen,'cull') 
@@ -198,17 +205,17 @@
                 kelp.resttime = mngt.time(h);       end
     % run over length of mngt action
         for i = 1:length(mngt.length)
-        
+
             if contains(mngt_scen,'fish')
                 pred.fishlgth = mngt.length(i);     end
             if contains(mngt_scen,'cull') 
                 urchin.culllgth = mngt.length(i);   end  
             if contains(mngt_scen,'rest') 
                 kelp.restlgth = mngt.length(i);     end
-    
+
     % Run over degree of mngt action
         for j = 1:deglngth
-        
+
             if contains(mngt_scen,'fish')
                 if isscalar(mngt.degreeF)
                    pred.fishF = mngt.degreeF(1);
@@ -219,10 +226,8 @@
             if contains(mngt_scen,'cull') 
                 if isscalar(mngt.degreeC)
                     urchin.culln = mngt.degreeC(1);
-                    % urchin.culln = mngt.degreeC(1)*urchinA_avg_pre;
                 else
                     urchin.culln = mngt.degreeC(j);
-                    % urchin.culln = mngt.degreeC(j)*urchinA_avg_pre;   
                 end  
             end
             if contains(mngt_scen,'rest') 

@@ -71,7 +71,7 @@ function [kt,ut,GC,cft,cmt,RK_noise,prey_consumed] = run_UrchinKelpCrab_Implicit
 
 % Other parameters
     dist_yrs = dist.yrs;
-
+    
 
 
 %% VECTORS FOR STATE VARIABLES --------------------------
@@ -304,11 +304,11 @@ for t = 1:tmax
     
     % Females
        Mcf = zeros(44, 44, RR);
-       Mcf(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sf(:,1,:)), 44-1, 1, RR); % 43x43xRR stored in the sub-diagonal of 44x44xRR
+       Mcf(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sf(:,1,:)), 44-1, 1, RR);
     
     % Males
        Mcm = zeros(44, 44, RR);
-       Mcm(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sm(:,1,:)), 44-1, 1, RR);  % 43x43xRR stored in the sub-diagonal of an 44x44xRR
+       Mcm(2:44, 1:44-1, :) = reshape(eye(44-1), 44-1, 44-1, 1) .* reshape(squeeze(Sm(:,1,:)), 44-1, 1, RR);
 
 % Recruitment
 
@@ -380,19 +380,34 @@ for t = 1:tmax
 % Next yrs numbers
     ut(:,t+1,:) = pagemtimes(Mu, ut_post) + (RUadd .* sJ^tau);
 
-% Urchin culling (mass mortality events)      
+% Urchin culling (mass mortality events)
     if urchin.culling == "Y"
-        if ismember(t, dist_yrs(1) + urchin.culltime + (0:urchin.culllgth-1)) && ismember(rem(t,4), urchin.season)
-            % cull all exposed first, then the hiding urchins
-                % which reps have more exposed than the cull number
-                exp_reps = find(ut(3,t+1,:) > urchin.culln)';
-                % ...and which dont
-                both_reps = find(ut(3,t+1,:) <= urchin.culln)';
-                % for exp_reps, just cull from exposed
-                ut(3,t+1,exp_reps) = ut(3,t+1,exp_reps) - urchin.culln;
-                % for both_reps, cull all from exposed and rest from hiding
-                ut(3,t+1,both_reps) = 0;
-                ut(2,t+1,both_reps) = max(ut(2,t+1,both_reps)-(urchin.culln - ut(3,t+1,both_reps)),0);
+        if  urchin.strategy == 1
+            if ismember(t, dist_yrs(1) + urchin.time_vec) && ismember(rem(t,4), urchin.season)
+                % cull all exposed first, then the hiding urchins
+                    % Which reps have more exposed than the cull number
+                    exp_reps = find(ut(3,t+1,:) > urchin.culln)';
+                    % ...and which dont
+                    both_reps = find(ut(3,t+1,:) <= urchin.culln)';
+                    % for exp_reps, just cull from exposed
+                    ut(3,t+1,exp_reps) = ut(3,t+1,exp_reps) - urchin.culln;
+                    % for both_reps, cull all from exposed and rest from hiding
+                    ut(3,t+1,both_reps) = 0;
+                    ut(2,t+1,both_reps) = max(ut(2,t+1,both_reps)-(urchin.culln - ut(3,t+1,both_reps)),0);
+            end
+        else
+            if ismember(t, dist_yrs(1) + urchin.culltime + (0:urchin.culllgth-1)) && ismember(rem(t,4), urchin.season)
+                % cull all exposed first, then the hiding urchins
+                    % Which reps have more exposed than the cull number
+                    exp_reps = find(ut(3,t+1,:) > urchin.culln)';
+                    % ...and which dont
+                    both_reps = find(ut(3,t+1,:) <= urchin.culln)';
+                    % for exp_reps, just cull from exposed
+                    ut(3,t+1,exp_reps) = ut(3,t+1,exp_reps) - urchin.culln;
+                    % for both_reps, cull all from exposed and rest from hiding
+                    ut(3,t+1,both_reps) = 0;
+                    ut(2,t+1,both_reps) = max(ut(2,t+1,both_reps)-(urchin.culln - ut(3,t+1,both_reps)),0);
+            end
         end
     end
 
@@ -401,9 +416,16 @@ for t = 1:tmax
    
 % Kelp restoration (adding juvenile kelp biomass)
     RKr = 0;
+
     if kelp.restore == "Y"
-        if ismember(t, dist_yrs(1) + kelp.resttime + (0:kelp.restlgth-1)) && ismember(rem(t,4), kelp.season)
-            RKr = kelp.restn;
+        if kelp.strategy == 1
+            if ismember(t, dist_yrs(1) + kelp.time_vec) && ismember(rem(t,4), kelp.season)
+                RKr = kelp.restn;
+            end
+        else
+            if ismember(t, dist_yrs(1) + kelp.resttime + (0:kelp.restlgth-1)) && ismember(rem(t,4), kelp.season)
+                RKr = kelp.restn;
+            end
         end
     end
     

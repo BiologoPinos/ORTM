@@ -12,7 +12,7 @@
 %% Single replicate run: urchin-kelp (validation)
     % 
     % % Which replicate? 
-    %     R = 2;
+    %     R = 9912;
     % 
     % % Plot dynamics
     %     figure()
@@ -29,9 +29,9 @@
     %         xlim([5,(T2+1)/4])
     %         ylim([0 12*10^4])
     % 
-    %         % Axis
-    %         ylabel('Kelp density (kg/ha)')
-    %         legend('Juvenile','Adult','Drift')
+    %         % % Axis
+    %         % ylabel('Kelp density (kg/ha)')
+    %         % legend('Juvenile','Adult','Drift')
     % 
     %     % Urchins 🟣 
     %         subplot(2,1,2)
@@ -43,13 +43,12 @@
     % 
     %         % Limits
     %         xlim([5,(T2+1)/4])
-    %         ylim([0 10000])
+    %         % ylim([0 12000])
     % 
-    %         % Axis
-    %         legend('Hiding adults','Exposed adults')
-    %         ylabel('Urchin density (kg/ha)')
-    %         xlabel('Years')
-
+    %         % % Axis
+    %         % legend('Hiding adults','Exposed adults')
+    %         % ylabel('Urchin density (kg/ha)')
+    %         % xlabel('Years')
 
 %% Explore initial conditions for urchins 🟣 and crabs 🦀
     % 
@@ -67,7 +66,7 @@
     %     % Crabs males 🦀
     %         % disp(mean(cmt2(1:44,161,:), 3));
     %         disp(mean(sum(reshape(cmt2(1:44, 161, :),4,11,[]),1),3)); % grouped by every 4 rows
-    %
+    % 
     % % Plot mean biomass over time across all replicates
     %     figure()
     % 
@@ -93,28 +92,26 @@
     %             plot(0:T2, squeeze(C_male(a,:,:)))
     %         end
 
-
 %% Plot kelp 🌿 biomass vs urchin 🟣 biomass (validation)
-
-    % Plot vs/vs biomasses
-        figure()
-
-        % sample summer/fall (start of fall to start of winter) over 10 yrs (after) - transect evaluation (*0.006)
-            kts_all = reshape(mean(sum(kts(1:2,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
-            uts_all = reshape(mean(sum(uts(2:3,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
-
-        % Scatter plot        
-            hold on
-            scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
-
-        % Limits
-        % xlim([0 200])
-        % ylim([0 800])
-
-        % Axis
-        xlabel('Urchin biomass (kg.60m^2)')
-        ylabel('Kelp biomass (kg.60m^2)')
-
+    % 
+    % % Plot vs/vs biomasses
+    %     figure()
+    % 
+    %     % sample summer/fall (start of fall to start of winter) over 10 yrs (after) - transect evaluation (*0.006)
+    %         kts_all = reshape(mean(sum(kts(1:2,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
+    %         uts_all = reshape(mean(sum(uts(2:3,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
+    % 
+    %     % Scatter plot        
+    %         hold on
+    %         scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
+    % 
+    %     % Limits
+    %     xlim([0 200])
+    %     ylim([0 500])
+    % 
+    %     % Axis
+    %     xlabel('Urchin biomass (kg.60m^2)')
+    %     ylabel('Kelp biomass (kg.60m^2)')
 
 %% Plot distributions of mean biomass across all replicates (where kelp persists)
     % 
@@ -137,7 +134,6 @@
     %                        sum(cmts(9:44,(end-80):end,1,1,kelp_avg>0)),2)*0.006,20)
     %         xlabel('Crab density (N/ha)')
 
-
 %% In how/which many simulations (SIMS) does kelp 🌿 persist over time?
     % 
     % % Persistence and extension of kelp across simulations (last twenty years "4*20" avg)
@@ -151,7 +147,6 @@
     % % Which ones don't/do go extinct 
     %     find(kelp_avg>0) % persti = find(kelp_avg>0);
     %     find(kelp_avg==0) % exti = find(kelp_avg==0);
-
 
 %% Plot SIMS persistence (Kelp 🌿) over time (for multiple reps, single scenario)
 
@@ -183,8 +178,7 @@
             % xlabel('Years','FontSize',16)
             % xlabel('Timesteps (seasons)')          
 
-
-%% URCHIN 🟣 & CRAB 🦀 BIOMASS DISTRIBUTION ACROSS REPLICATES (seasonal scale - loop)
+%% URCHIN 🟣 BIOMASS & CRAB 🦀 DENSITIES DISTRIBUTION ACROSS REPLICATES (seasonal scale - loop)
     % 
     % figure()
     % 
@@ -253,8 +247,7 @@
     %     grid on
     % end
 
-
-%% URCHIN 🟣 & CRAB 🦀 BIOMASS DISTRIBUTION ACROSS REPLICATES (seasonal scale)
+%% URCHIN 🟣 & BIOMASS CRAB 🦀 DENSITIES DISTRIBUTION ACROSS REPLICATES (seasonal scale)
     % 
     % figure()
     % 
@@ -334,8 +327,7 @@
     %             xlabel('Seasonal time step')
     %             title('Adult crab densities Mean ± 5–95%')
 
-
-%% URCHIN 🟣 & CRAB 🦀 BIOMASS DISTRIBUTION ACROSS REPLICATES (yearly smoothed - loop)
+%% URCHIN 🟣 & BIOMASS CRAB 🦀 DENSITIES DISTRIBUTION ACROSS REPLICATES (yearly smoothed - loop)
     % 
     % figure()
     % 
@@ -406,8 +398,7 @@
     %         grid on
     %     end
 
-
-%% URCHIN 🟣 & CRAB 🦀 BIOMASS DISTRIBUTION ACROSS REPLICATES (yearly smoothed)
+%% URCHIN 🟣 BIOMASS & CRAB 🦀 DENSITIES DISTRIBUTION ACROSS REPLICATES (yearly smoothed)
     % 
     % figure()
     % 
@@ -488,6 +479,54 @@
     %             xlabel('Years')
     %             title('Adult crab densities Mean ± 5–95%')
 
+%% CRAB 🦀 DENSITIES DISTRIBUTION ACROSS REPLICATES (yearly smoothed)
+    % 
+    % figure()
+    % 
+    %     window = 4;                         % 1 year (4 seasonal steps)
+    %     t = (0:size(ut2,2)-1)/4;            % time in years
+    % 
+    %         % Fishable Crab 🦀 plot
+    %             hold on
+    % 
+    %             C = squeeze(sum(cmt2(17:24,:,:),1))';  % R x T
+    % 
+    %             m = movmedian(mean(C,1), window);
+    %             p95 = movmedian(prctile(C,95,1), window);
+    %             p05 = movmedian(prctile(C,5,1), window);
+    % 
+    %             fill([t fliplr(t)], [p95 fliplr(p05)], ...
+    %                  [1 0.6 0.2], 'EdgeColor','none','FaceAlpha',0.4);
+    % 
+    %             plot(t, m, 'k--','LineWidth',1.5);
+    % 
+    %             xlim([20/4 100/4])
+    %             ylim([0 2000])
+    %             grid on
+    %             % ylabel('Fishable crab biomass (kg/ha)')
+    %             % xlabel('Years')
+    %             % title('Fishable crab densities Mean ± 5–95%')
+
+%% FISHABLE DENSITIES OF CRAB (NUMBERS)
+    % 
+     % Fishable Male Crab Densities 🦀
+     % 
+     %    % Time period
+     %        % TP = 21:40;     % yr 5-10
+     %        % TP = 41:60;     % yr 10-15
+     %        % TP = 61:80;     % yr 15-20
+     %        TP = 81:100;    % yr 20-25
+     % 
+     %    % Collapse spatial dimensions, keep simulations
+     %        vals = squeeze(mean(sum(cmt2(17:24, TP, :), 1), 2));
+     %            % disp(mean(mean(sum(cmt2(17:24, 21:40, :),1)))); % 
+     % 
+     %    % Quantiles (5% and 95%)
+     %        q = quantile(vals, [0.05 0.95]);
+     % 
+     %    % Display values
+     %        fprintf('Mean: %.4f\n', mean(vals));
+     %        fprintf('5%%: %.4f | 95%%: %.4f\n', q(1), q(2));
 
 %% FUNCTIONAL RESPONSE COMPARISON --------------------------
     % 
@@ -545,50 +584,48 @@
     % 
     %     sgtitle('Type II Functional Response Across Prey Types')
 
-
 %% PREY CONSUMED PER OTTER PER DAY --------------------------
-% 
-% ndays = 91;
-% 
-%     % Convert urchins from biomass (kg) to individuals
-%         prey_consumed2(1,:,:) = prey_consumed2(1,:,:) ./ 0.1;   % hiding urchins
-%         prey_consumed2(2,:,:) = prey_consumed2(2,:,:) ./ 0.1;   % exposed urchins
-% 
-%     % Convert biomass → number of otters (approximation)
-%         OT_num = (pred_forced(1:T2, :) .*100) ./ 32;   % otters 
-% 
-%     % Per capita prey x pred Vector
-%         prey_per_otter_day = NaN(size(prey_consumed2)); % 4 x T2 x RR
-% 
-%     % Compute per-capita daily consumption
-%         for r = 1:RR
-%             for t = 1:T2
-% 
-%                 if OT_num(t,r) > 0
-%                     prey_per_otter_day(:,t,r) = ...
-%                         (prey_consumed2(:,t,r) ./ ndays) ./ OT_num(t,r);
-%                 else
-%                     % No otters → undefined per-capita consumption
-%                     prey_per_otter_day(:,t,r) = NaN;
-%                 end
-% 
-%             end
-%         end
-% 
-%     % CREATE SUMMARY TABLE
-% 
-%         % Mean across replicates (ignoring NaNs)
-%             mean_prey = mean(prey_per_otter_day, 3, 'omitnan'); % 4 x T2
-%             % the average number of prey eaten per day by season by otters
-%             % across all replicates
-% 
-%         % Build table
-%             PreyTable = table((1:T2)', mean_prey(1,:)', mean_prey(2,:)', mean_prey(3,:)', mean_prey(4,:)', ...
-%                 'VariableNames', {'Time Step', 'Urchin_Hiding', 'Urchin_Exposed', 'Crab_Female', 'Crab_Male'});
-% 
-%         % Display
-%             disp(PreyTable)
-
+    % 
+    % ndays = 91;
+    % 
+    %     % Convert urchins from biomass (kg) to individuals
+    %         prey_consumed2(1,:,:) = prey_consumed2(1,:,:) ./ 0.1;   % hiding urchins
+    %         prey_consumed2(2,:,:) = prey_consumed2(2,:,:) ./ 0.1;   % exposed urchins
+    % 
+    %     % Convert biomass → number of otters (approximation)
+    %         OT_num = (pred_forced(1:T2, :) .*100) ./ 32;   % otters 
+    % 
+    %     % Per capita prey x pred Vector
+    %         prey_per_otter_day = NaN(size(prey_consumed2)); % 4 x T2 x RR
+    % 
+    %     % Compute per-capita daily consumption
+    %         for r = 1:RR
+    %             for t = 1:T2
+    % 
+    %                 if OT_num(t,r) > 0
+    %                     prey_per_otter_day(:,t,r) = ...
+    %                         (prey_consumed2(:,t,r) ./ ndays) ./ OT_num(t,r);
+    %                 else
+    %                     % No otters → undefined per-capita consumption
+    %                     prey_per_otter_day(:,t,r) = NaN;
+    %                 end
+    % 
+    %             end
+    %         end
+    % 
+    %     % CREATE SUMMARY TABLE
+    % 
+    %         % Mean across replicates (ignoring NaNs)
+    %             mean_prey = mean(prey_per_otter_day, 3, 'omitnan'); % 4 x T2
+    %             % the average number of prey eaten per day by season by otters
+    %             % across all replicates
+    % 
+    %         % Build table
+    %             PreyTable = table((1:T2)', mean_prey(1,:)', mean_prey(2,:)', mean_prey(3,:)', mean_prey(4,:)', ...
+    %                 'VariableNames', {'Time Step', 'Urchin_Hiding', 'Urchin_Exposed', 'Crab_Female', 'Crab_Male'});
+    % 
+    %         % Display
+    %             disp(PreyTable)
 
 %% SCATTER: prey consumed vs otter density
     % 

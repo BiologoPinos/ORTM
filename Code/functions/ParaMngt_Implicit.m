@@ -14,7 +14,18 @@ mngt.length = NaN;
 mngt.degree = NaN;
 mngt.season = NaN;
 
-% set time and length for any scenario (if one occurs)
+% Set mngt for continuous or periodic (mngt-time-gap)
+
+    % Choose scenario (continuous = 0 vs mngt-time-gap = 1)
+        mngt.strategy = 1; % Set to 0 to run without gaps
+    
+    % Define the gap in time 
+        % mngt.time_vec = [0, 1, 2, 3, 8, 9, 10, 11]; % 1 year gap
+        % mngt.time_vec = [0, 1, 2, 3, 12, 13, 14, 15]; % 2 year gap
+        mngt.time_vec = [0, 1, 2, 3, 16, 17, 18, 19]; % 3 year gap
+
+
+% Set time and length for any scenario (if one occurs)
 
 if contains(scenario,{'cull', 'rest'}) 
 
@@ -23,8 +34,7 @@ if contains(scenario,{'cull', 'rest'})
         mngt.time =  0;        
 
     % Length of mngt action (timesteps). For how long
-        mngt.length = 1*4;    
-
+        mngt.length = 5*4;    
 
 end
 
@@ -34,7 +44,7 @@ end
 if contains(scenario,'cull') 
 
     % Urchin Removal
-    
+
     % What seasons does mngt happen in?
         % 1 = winter, 2 = spring, 3 = summer, 4 = fall
         mngt.season = 3; % 1:4; %
@@ -43,24 +53,24 @@ if contains(scenario,'cull')
         mngt.culling = "Y";  
 
     % Proportion of biomass removed in a season (kg.ha)
-        mngt.degreeC = (1*4.6286e+03); % Target is to remove 4.6286e+03 urchins total      
+        mngt.degreeC = (1*4.6286e+03)/2; % Target is to remove 4.6286e+03 urchins total      
 
 end
 
+
 if contains(scenario,'rest') 
-    
+
     % Kelp Restoration  
-        
+
         % What seasons does mngt happen in?
             % 1 = winter, 2 = spring, 3 = summer, 4 = fall
-            mngt.season = 2:3; % 2:3; %
-    
+            mngt.season = 2:3; % 1:4; %
+
         % = reseeding juveniles into the population
             mngt.restore = "Y"; 
-    
-    
+
         % Proportion of biomass of recruits added per season (kg.ha)
-            mngt.degreeR =  (1*(1.0094e+04 * 4)); % Target is to add 4 times more the mean peak spore production (1.0094e+04 * 4)  
+            mngt.degreeR =  (1*(1.0094e+04 * 4))/2; % Target is to add 4 times more the mean peak spore production (1.0094e+04 * 4)  
 
 end
 
