@@ -55,7 +55,7 @@
     crab_species = 'Dungeness_OR_LogNorm'; % opt: 'Dungeness_OR_Norm' | 'Dungeness_OR_LogNorm'
 
 % Choose your sea otters
-    otter_population = 'Scenario-High_SuccessSegment-S6.csv'; % opt: 'Table0.csv' | 'Scenario-High_SuccessSegment-S6.csv'
+    otter_population = 'Table0.csv'; % opt: 'Table0.csv' | 'Scenario-High_SuccessSegment-S6.csv'
     
 
 %% 2) MODEL PARAMETERS (Set for "realism") --------------------------
@@ -122,7 +122,7 @@
     % User Note: Modify ParaMngt_Implicit.m script accordingly  
     
 % Disturbance length (How long the disturbance will last)
-    dist.lngth = 1;  
+    dist.lngth = 0;  
 
 % Disturbance timing (When the disturbance will happen)
     if dist.lngth == 0
@@ -143,7 +143,7 @@
         dist.hij = kelp.hij; % dist.hij = repmat(cell2mat(kelp.bhij) .* reshape([1.15 1.05 1.2 1.3],1,1,4), 1, 1, 1, tmax/4); % for heat wave version
 
 % Which management scenario to run over?
-    mngt_scen = 'cull&rest'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest';  
+    mngt_scen = 'restoration'; % 'none'; % 'restoration'; % 'culling'; % 'cull&rest';  
 
 % Get vector values
     mngt = ParaMngt_Implicit(mngt_scen);

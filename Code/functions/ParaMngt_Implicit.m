@@ -17,7 +17,7 @@ mngt.season = NaN;
 % Set mngt for continuous or periodic (mngt-time-gap)
 
     % Choose scenario (continuous = 0 vs mngt-time-gap = 1)
-        mngt.strategy = 1; % Set to 0 to run without gaps
+        mngt.strategy = 0; % Set to 0 to run without gaps
     
     % Define the gap in time 
         % mngt.time_vec = [0, 1, 2, 3, 8, 9, 10, 11]; % 1 year gap

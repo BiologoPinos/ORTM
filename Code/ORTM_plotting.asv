@@ -12,7 +12,7 @@
 %% Single replicate run: urchin-kelp (validation)
 
     % Which replicate? 
-        R = 7973;
+        R = 10;
 
     % Plot dynamics
         figure()
@@ -20,7 +20,7 @@
         % Kelp 🌿 
             subplot(2,1,1)
             hold on
-            plot(repmat((1:(T2+1))'./4,1,3), kts(:,:,1,R)')
+            plot(repmat((1:(T2+1))'./4,1,3), kts(2:3,:,1,R)')
 
             % Disturbance timing
             xline(dist.yrs./4,'--r')           
@@ -43,7 +43,7 @@
 
             % Limits
             xlim([5,(T2+1)/4])
-            ylim([0 30*10^3])
+            % ylim([0 12000])
 
             % % Axis
             % legend('Hiding adults','Exposed adults')
@@ -93,25 +93,25 @@
     %         end
 
 %% Plot kelp 🌿 biomass vs urchin 🟣 biomass (validation)
-    % 
-    % % Plot vs/vs biomasses
-    %     figure()
-    % 
-    %     % sample summer/fall (start of fall to start of winter) over 10 yrs (after) - transect evaluation (*0.006)
-    %         kts_all = reshape(mean(sum(kts(1:2,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
-    %         uts_all = reshape(mean(sum(uts(2:3,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
-    % 
-    %     % Scatter plot        
-    %         hold on
-    %         scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
-    % 
-    %     % Limits
-    %     xlim([0 200])
-    %     ylim([0 500])
-    % 
-    %     % Axis
-    %     xlabel('Urchin biomass (kg.60m^2)')
-    %     ylabel('Kelp biomass (kg.60m^2)')
+
+    % Plot vs/vs biomasses
+        figure()
+
+        % sample summer/fall (start of fall to start of winter) over 10 yrs (after) - transect evaluation (*0.006)
+            kts_all = reshape(mean(sum(kts(1:2,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
+            uts_all = reshape(mean(sum(uts(2:3,sort([(77-41):4:77,(78-41):4:78]),1,1,:)),2),1,[])*0.006;
+
+        % Scatter plot        
+            hold on
+            scatter(uts_all, kts_all, 'k', 'filled', 'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',.2)
+
+        % Limits
+        xlim([0 200])
+        ylim([0 500])
+
+        % Axis
+        xlabel('Urchin biomass (kg.60m^2)')
+        ylabel('Kelp biomass (kg.60m^2)')
 
 %% Plot distributions of mean biomass across all replicates (where kelp persists)
     % 
